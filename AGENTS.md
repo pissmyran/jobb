@@ -2,7 +2,7 @@
 
 ## Läs först
 
-1. [CLAUDE.md](CLAUDE.md) — gemensamma regler för arbetssätt, deploy, loggning, kostnader och Docker. Arbetet sker lokalt; GitHub är sparpunkten och färdiga delar går in i `main` via en pull request.
+1. [CLAUDE.md](CLAUDE.md) — gemensamma regler för arbetssätt, deploy, loggning, kostnader och Docker. Arbetet sker lokalt; färdigt och granskat arbete pushas direkt till `main` på GitHub.
 2. [docs/index.md](docs/index.md) — dokumentationskarta.
 3. [docs/project-context.md](docs/project-context.md) — teknisk current-state.
 4. [docs/architecture.md](docs/architecture.md) — runtime, state och trust boundaries.

@@ -24,7 +24,7 @@ Det kör `@jobb/web`-paketets Wrangler-baserade devscript.
 
 ## Deployment
 
-Produktion driftsätts från en renderad kopia med dina egna värden, se avsnittet om Cloudflare i `README.md`: kör typecheck och tester, rendera med `tools/render.mjs`, kör remote D1-migrationerna mot den renderade `wrangler.jsonc` och deploya kopian. CI på GitHub kör tester, Docker-bygge och CodeQL på pull requests till `main`. Det finns ingen förhandsmiljö.
+Produktion driftsätts från en renderad kopia med dina egna värden, se avsnittet om Cloudflare i `README.md`: kör typecheck och tester, rendera med `tools/render.mjs`, kör remote D1-migrationerna mot den renderade `wrangler.jsonc` och deploya kopian. CI på GitHub kör tester, Docker-bygge och CodeQL vid varje push till `main`. Det finns ingen förhandsmiljö.
 
 ## D1 data locality
 
