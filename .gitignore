@@ -116,3 +116,9 @@ dist/
 build/
 !**/.dev.vars.example
 !**/.env.example
+
+# Local agent tooling (skills) and CodeRabbit backups; not part of the source
+.agents/
+.claude/
+skills-lock.json
+.coderabbit-recovery-*/
