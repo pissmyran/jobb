@@ -1,0 +1,87 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "jobb",
+  "main": "apps/web/src/index.ts",
+  "compatibility_date": "2026-09-17",
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
+  "workers_dev": false,
+  "preview_urls": false,
+  "upload_source_maps": true,
+  "vars": {
+    "PUBLIC_BASE_URL": "https://__PUBLIC_HOST__",
+    "CF_ACCESS_TEAM_DOMAIN": "__CF_ACCESS_TEAM_DOMAIN__",
+    "CF_ACCESS_AUD": "__CF_ACCESS_AUD__"
+  },
+  "observability": {
+    "enabled": true,
+    "redact_query_string": true,
+    "logs": {
+      "enabled": true,
+      "head_sampling_rate": 1,
+      "invocation_logs": true,
+      "persist": true
+    },
+    "traces": {
+      "enabled": true,
+      "head_sampling_rate": 0.01,
+      "persist": true
+    },
+    "issues": {
+      "enabled": true
+    }
+  },
+  "assets": {
+    "directory": "apps/web/public",
+    "binding": "ASSETS",
+    "run_worker_first": true
+  },
+  "browser": {
+    "binding": "BROWSER"
+  },
+  "secrets_store_secrets": [
+    {
+      "binding": "JOBB_CONFIG_KEY",
+      "store_id": "__SECRETS_STORE_ID__",
+      "secret_name": "JOBB_CONFIG_KEY"
+    }
+  ],
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "__D1_DATABASE_NAME__",
+      "database_id": "__D1_DATABASE_ID__",
+      "migrations_dir": "migrations"
+    }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "EVIDENCE",
+      "bucket_name": "jobb-evidence"
+    }
+  ],
+  "send_email": [
+    {
+      "name": "EMAIL"
+    }
+  ],
+  "workflows": [
+    {
+      "name": "jobb-automation",
+      "binding": "JOB_AUTOMATION",
+      "class_name": "JobAutomationWorkflow"
+    }
+  ],
+  "triggers": {
+    "crons": [
+      "0 9 10-13 * *"
+    ]
+  },
+  "routes": [
+    {
+      "pattern": "__PUBLIC_HOST__",
+      "custom_domain": true
+    }
+  ]
+}

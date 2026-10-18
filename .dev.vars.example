@@ -1,0 +1,30 @@
+# Copy to .dev.vars for local development. Never commit .dev.vars.
+
+# Cloudflare Access is the only dashboard authentication path. Locally there is
+# no Access in front of the Worker, so dashboard requests are rejected unless a
+# valid Cf-Access-Jwt-Assertion header is sent.
+CF_ACCESS_TEAM_DOMAIN="yourteam.cloudflareaccess.com"
+CF_ACCESS_AUD="replace-with-access-application-aud"
+
+# Encrypts the dashboard-managed runtime configuration in D1. Never commit the real value.
+JOBB_CONFIG_KEY="replace-with-a-long-random-string"
+
+PUBLIC_BASE_URL="https://jobb.example.com"
+
+# StudentConsulting runtime credentials
+STUDENTCONSULTING_EMAIL="user@example.com"
+STUDENTCONSULTING_PASSWORD="replace-me"
+STUDENTCONSULTING_AUTOSUBMIT="false"
+
+# Optional extra suitability filters. Primary discovery comes from the authenticated StudentConsulting "Matcha jobb" profile.
+# Example values: supporttekniker,it-support,helpdesk | chef,senior | Stockholm,Uppsala | SE,NO,DK
+JOB_INCLUDE_TERMS=""
+JOB_EXCLUDE_TERMS=""
+JOB_ALLOWED_LOCATIONS=""
+JOB_ALLOWED_COUNTRIES=""
+
+# E-mail of the monthly .txt (needs the Cloudflare Email Service binding).
+# One or more recipients, comma separated; mode "group" (one shared e-mail) or "separate".
+NOTIFY_EMAIL_TO="user@example.com, other@example.com"
+NOTIFY_EMAIL_FROM="jobb@example.com"
+NOTIFY_EMAIL_MODE="group"

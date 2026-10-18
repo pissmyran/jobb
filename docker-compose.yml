@@ -1,0 +1,65 @@
+# Jobb – applies for jobs on StudentConsulting automatically and collects the
+# month's ten applications in a .txt. Fill in the values below, then run:
+#   docker compose up -d
+# Open http://<server>:8787, log in and enter your StudentConsulting account
+# under System. Everything else has working defaults.
+#
+# Log in (AUTH_MODE):
+#   password           – fill in ADMIN_PASSWORD. Nothing else is needed.
+#   cloudflare-access  – Cloudflare Access in front of the site:
+#                        1. Zero Trust → Networks → Tunnels: create a tunnel, point a public
+#                           host name at http://jobb:8787 and put its token in TUNNEL_TOKEN.
+#                        2. Zero Trust → Access → Applications: add a self-hosted app for that
+#                           host name with a policy for who may log in.
+#                        3. Copy the app's "Application Audience (AUD) Tag" to CF_ACCESS_AUD
+#                           and your team domain to CF_ACCESS_TEAM_DOMAIN.
+#                        4. Start with the tunnel: docker compose --profile tunnel up -d
+#
+# Browser for the job searches (BROWSER_MODE):
+#   bundled     – Chrome is already inside the image. Nothing else is needed.
+#   cloudflare  – Cloudflare Browser Rendering (billed per browser hour). Fill in
+#                 CLOUDFLARE_API_TOKEN (permission "Browser Rendering: Edit") and
+#                 CLOUDFLARE_ACCOUNT_ID.
+services:
+  jobb:
+    image: docker.io/driftaegis/jobb:1
+    restart: unless-stopped
+    ports:
+      - "8787:8787"
+    shm_size: "1gb" # Chrome needs shared memory
+    environment:
+      # Address you open Jobb on (used in e-mails).
+      PUBLIC_URL: "http://localhost:8787"
+      AUTH_MODE: "password" # or "cloudflare-access"
+      # AUTH_MODE=password
+      ADMIN_PASSWORD: "change-me-to-a-long-password"
+      # AUTH_MODE=cloudflare-access
+      CF_ACCESS_TEAM_DOMAIN: "" # e.g. yourteam.cloudflareaccess.com
+      CF_ACCESS_AUD: ""
+
+      BROWSER_MODE: "bundled" # or "cloudflare"
+      # BROWSER_MODE=cloudflare
+      CLOUDFLARE_API_TOKEN: ""
+      CLOUDFLARE_ACCOUNT_ID: ""
+
+      # Optional: e-mail the monthly .txt. Any SMTP account works (e.g. your
+      # e-mail provider's SMTP settings). Recipients and sender are set under System.
+      SMTP_HOST: "" # e.g. smtp.example.com
+      SMTP_PORT: "587" # 587 (STARTTLS) or 465 (TLS)
+      SMTP_USER: ""
+      SMTP_PASSWORD: ""
+    volumes:
+      - jobb-data:/data # database, evidence and settings
+
+  tunnel:
+    image: docker.io/cloudflare/cloudflared:latest
+    profiles: ["tunnel"]
+    restart: unless-stopped
+    command: tunnel --no-autoupdate run
+    environment:
+      TUNNEL_TOKEN: "" # from Zero Trust → Networks → Tunnels
+    depends_on:
+      - jobb
+
+volumes:
+  jobb-data:

@@ -1,0 +1,33 @@
+// Container config: same Worker, no Cloudflare account, routes or ids. D1, R2
+// and Workflows run locally under /data. __BROWSER_REMOTE__ is filled in by
+// entrypoint.sh: false = Chrome inside the image, true = Cloudflare Browser
+// Rendering.
+{
+  "name": "jobb",
+  "main": "docker/container-entry.ts",
+  "compatibility_date": "2026-09-17",
+  "compatibility_flags": ["nodejs_compat"],
+  "assets": {
+    "directory": "apps/web/public",
+    "binding": "ASSETS",
+    "run_worker_first": true
+  },
+  "browser": { "binding": "BROWSER", "remote": __BROWSER_REMOTE__ },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "jobb",
+      "database_id": "local",
+      "migrations_dir": "migrations"
+    }
+  ],
+  "r2_buckets": [{ "binding": "EVIDENCE", "bucket_name": "evidence" }],
+  "workflows": [
+    {
+      "name": "jobb-automation",
+      "binding": "JOB_AUTOMATION",
+      "class_name": "JobAutomationWorkflow"
+    }
+  ],
+  "triggers": { "crons": ["0 9 10-13 * *"] }
+}
