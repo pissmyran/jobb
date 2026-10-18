@@ -47,7 +47,7 @@ Logging, as in the sibling repos: logs at sampling 1 with invocation logs, trace
 - `Dockerfile` (build from the repo root: `docker build -t jobb .`), `docker-compose.yml`, `CHANGELOG.md` and `docker/` (`README.md` is the Docker Hub page, `entrypoint.sh`, `import-settings.sh`, the container wrangler config).
 - The Worker runs in workerd through `wrangler dev --local` with all state under `/data`. The entrypoint renders the source with `tools/render.mjs` from the container environment with zero-setup defaults, and generates missing encryption keys once into `/data`. Images start empty and never read from anyone's Cloudflare resources.
 - Settings come from `docker-compose.yml`, or once from `/data/import.env`: `import-settings.sh` merges it into `/data/settings.env` and deletes it. Non-empty compose variables win.
-- Keep `docker/README.md` in step with `docker-compose.yml` and `CHANGELOG.md`. Versions are semver; tag `X.Y.Z`, `X.Y`, `X` and `latest`.
+- Keep `docker/README.md` in step with `docker-compose.yml` and `CHANGELOG.md`. Versions are semver. To publish, bump the version (package.json or version.txt) and CHANGELOG.md, push, then push a tag `vX.Y.Z`: `.github/workflows/docker.yml` builds the image and pushes `X.Y.Z`, `X.Y`, `X` and `latest` to Docker Hub with the organization's `DOCKERHUB_TOKEN`.
 
 ## GitHub
 

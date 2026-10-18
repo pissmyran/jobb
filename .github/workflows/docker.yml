@@ -1,0 +1,64 @@
+# Builds the Docker image and publishes it to Docker Hub when a version tag
+# (v1.2.3) is pushed. The tag must match the project's version and CHANGELOG.md
+# must have an entry for it. Uses only the docker CLI on GitHub's own runner.
+name: Docker
+
+on:
+  push:
+    tags: ["v*.*.*"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: docker-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: Bygg och publicera
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      IMAGE: docker.io/${{ vars.DOCKERHUB_USERNAME }}/jobb
+      DOCKERHUB_USERNAME: ${{ vars.DOCKERHUB_USERNAME }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Version
+        run: |
+          version=$(node -p "require('./package.json').version")
+          if [ "$GITHUB_REF_TYPE" = tag ] && [ "${GITHUB_REF_NAME#v}" != "$version" ]; then
+            echo "::error::Taggen $GITHUB_REF_NAME stämmer inte med versionen $version."
+            exit 1
+          fi
+          grep -q "^## $version " CHANGELOG.md || { echo "::error::CHANGELOG.md saknar $version."; exit 1; }
+          echo "VERSION=$version" >> "$GITHUB_ENV"
+      - name: Bygg
+        run: docker build --pull -t "$IMAGE:$VERSION" .
+      - name: Publicera
+        env:
+          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+        run: |
+          printf '%s' "$DOCKERHUB_TOKEN" | docker login docker.io -u "$DOCKERHUB_USERNAME" --password-stdin
+          major=${VERSION%%.*}
+          minor=${VERSION%.*}
+          for tag in "$VERSION" "$minor" "$major" latest; do
+            docker tag "$IMAGE:$VERSION" "$IMAGE:$tag"
+            docker push "$IMAGE:$tag"
+          done
+          docker logout docker.io
+      - name: Docker Hub-sidan
+        env:
+          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+        run: |
+          # Needs a token with Read, Write and Delete; otherwise only a warning.
+          jwt=$(jq -n --arg u "$DOCKERHUB_USERNAME" --arg p "$DOCKERHUB_TOKEN" '{username: $u, password: $p}' |
+            curl -sf -X POST https://hub.docker.com/v2/users/login -H 'Content-Type: application/json' -d @- | jq -r .token)
+          status=$(jq -n --rawfile d docker/README.md '{full_description: $d}' |
+            curl -s -o /dev/null -w '%{http_code}' -X PATCH \
+              "https://hub.docker.com/v2/namespaces/$DOCKERHUB_USERNAME/repositories/jobb" \
+              -H "Authorization: Bearer $jwt" -H 'Content-Type: application/json' -d @-)
+          [ "$status" = 200 ] || echo "::warning::Docker Hub-sidan uppdaterades inte (HTTP $status). Token behöver Read, Write och Delete."
