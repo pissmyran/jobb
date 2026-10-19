@@ -54,6 +54,8 @@ Logging, as in the sibling repos: logs at sampling 1 with invocation logs, trace
 The repo is public on GitHub (`VineDrinker/jobb`).
 
 - All work happens on `dev`. `main` changes only through a pull request from `dev`, merged with a merge commit (no squash or rebase). Nobody pushes directly to `main`.
+- Before starting new work, bring `dev` up to date: `git pull --ff-only origin main`, then push `dev`. `main` requires branches to be up to date, and after each merge the merge commit exists only on `main`.
 - Before pushing to `dev`, run the tests and the local review once per finished change set: `cr review --uncommitted --agent -c ../coderabbit/.coderabbit.yaml` (or `--committed`). The shared rules live in `VineDrinker/coderabbit`, cloned next to this repo; a review takes 2–15 minutes.
-- Open the PR with `gh pr create --base main --head dev`. CI (`Tester`, `Docker-bild`) and CodeQL run on the PR; read the results once and act on real findings: a fault gets a fix, a finding that shows the design went wrong gets a rethink, noise is dismissed with a reason.
+- Open the PR with `gh pr create --base main --head dev --assignee VineDrinker` and turn on auto-merge with `gh pr merge <number> --auto --merge`. GitHub merges it by itself once the rules on `main` are met. The local CodeRabbit review before pushing is the code review; the CodeRabbit app does not review pull requests opened by bots.
+- Review findings are input, not a to-do list: a fault gets a fix, a finding that shows the design went wrong gets a rethink or a rewrite, noise is dismissed with a reason. Never use CI or review rounds as a debugging loop.
 - Dependency updates arrive as Dependabot PRs. Workflows use only GitHub's own actions, pinned by commit SHA, with a read-only token, and never `pull_request_target`. Nothing may be enabled that can cost money.
