@@ -142,8 +142,12 @@ let replaced = 0;
         text = text.replace(/\{\s*"pattern":\s*""[^}]*\},?\s*/g, "");
       }
       if (text !== before) {
+        // writeSync may write less than asked, so loop until every byte is out.
+        const bytes = Buffer.from(text, "utf8");
         ftruncateSync(fd);
-        writeSync(fd, text, 0);
+        for (let done = 0; done < bytes.length;) {
+          done += writeSync(fd, bytes, done, bytes.length - done, done);
+        }
         replaced++;
       }
     } finally {
