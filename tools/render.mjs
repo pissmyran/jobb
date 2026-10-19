@@ -13,14 +13,17 @@
 // whose pattern ends up empty are dropped from wrangler.jsonc. Deploy with
 //   npx wrangler deploy --cwd <out-dir>   (politiker: --cwd <out-dir>/app)
 import {
+  closeSync,
   cpSync,
   existsSync,
+  fstatSync,
+  ftruncateSync,
+  openSync,
   readFileSync,
   readdirSync,
   rmSync,
-  statSync,
   symlinkSync,
-  writeFileSync,
+  writeSync,
 } from "node:fs";
 import { dirname, extname, join, relative, resolve } from "node:path";
 
@@ -127,16 +130,24 @@ let replaced = 0;
       continue;
     }
     if (!TEXT.has(extname(entry.name)) && entry.name !== "_headers") continue;
-    if (statSync(path).size > 5_000_000) continue;
-    let text = readFileSync(path, "utf8");
-    const before = text;
-    for (const name of declared) text = text.split(`__${name}__`).join(values.get(name));
-    if (entry.name === "wrangler.jsonc") {
-      text = text.replace(/\{\s*"pattern":\s*""[^}]*\},?\s*/g, "");
-    }
-    if (text !== before) {
-      writeFileSync(path, text);
-      replaced++;
+    // Size check, read and write all go through one descriptor, so the file
+    // cannot be swapped between them.
+    const fd = openSync(path, "r+");
+    try {
+      if (fstatSync(fd).size > 5_000_000) continue;
+      let text = readFileSync(fd, "utf8");
+      const before = text;
+      for (const name of declared) text = text.split(`__${name}__`).join(values.get(name));
+      if (entry.name === "wrangler.jsonc") {
+        text = text.replace(/\{\s*"pattern":\s*""[^}]*\},?\s*/g, "");
+      }
+      if (text !== before) {
+        ftruncateSync(fd);
+        writeSync(fd, text, 0);
+        replaced++;
+      }
+    } finally {
+      closeSync(fd);
     }
   }
 })(out);
