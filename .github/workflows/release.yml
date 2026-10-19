@@ -1,0 +1,52 @@
+# Releases automatically when a merge to main carries a new version: if
+# package.json names a version that has no v-tag yet, this creates the tag and the
+# GitHub release (notes from CHANGELOG.md plus the merged PRs) and then
+# publishes the Docker image. Merges without a version bump do nothing.
+name: Release
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Release
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    outputs:
+      created: ${{ steps.release.outputs.created }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - id: release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version=$(node -p "require('./package.json').version")
+          if gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/v$version" >/dev/null 2>&1; then
+            echo "v$version finns redan; ingen release."
+            echo "created=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          grep -q "^## $version " CHANGELOG.md || { echo "::error::CHANGELOG.md saknar $version."; exit 1; }
+          awk -v v="$version" 'index($0, "## " v " ") == 1 {f = 1; next} /^## / && f {exit} f' CHANGELOG.md > "$RUNNER_TEMP/notes.md"
+          gh release create "v$version" --target "$GITHUB_SHA" --title "v$version" \
+            --notes-file "$RUNNER_TEMP/notes.md" --generate-notes
+          echo "created=true" >> "$GITHUB_OUTPUT"
+
+  docker:
+    name: Docker
+    needs: release
+    if: needs.release.outputs.created == 'true'
+    uses: ./.github/workflows/docker.yml
+    secrets: inherit

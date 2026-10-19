@@ -1,5 +1,6 @@
 # Builds the Docker image and publishes it to Docker Hub when a version tag
-# (v1.2.3) is pushed. The tag must match the project's version and CHANGELOG.md
+# (v1.2.3) is pushed, or when release.yml calls it after a version bump. The
+# tag must match the project's version and CHANGELOG.md
 # must have an entry for it. Uses only the docker CLI on GitHub's own runner.
 name: Docker
 
@@ -7,6 +8,7 @@ on:
   push:
     tags: ["v*.*.*"]
   workflow_dispatch:
+  workflow_call:
 
 permissions:
   contents: read

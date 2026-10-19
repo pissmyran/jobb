@@ -1,0 +1,51 @@
+# Raises the alarm when CI, Docker or Release fails on this repo's own
+# branches: opens an issue labelled ci-failure and assigned to the owner, so
+# GitHub sends a notification, or comments on the one already open. The issue
+# closes itself when the same workflow passes again on the same branch.
+name: Larm
+
+on:
+  workflow_run:
+    workflows: [CI, Docker, Release]
+    types: [completed]
+
+permissions:
+  contents: read
+
+jobs:
+  larm:
+    name: Larm
+    if: >-
+      github.event.workflow_run.head_repository.full_name == github.repository &&
+      contains(fromJSON('["success", "failure", "timed_out", "action_required", "startup_failure"]'), github.event.workflow_run.conclusion)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      issues: write
+    concurrency:
+      group: larm-${{ github.event.workflow_run.name }}-${{ github.event.workflow_run.head_branch }}
+      cancel-in-progress: false
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      OWNER: ${{ github.repository_owner }}
+      WORKFLOW: ${{ github.event.workflow_run.name }}
+      BRANCH: ${{ github.event.workflow_run.head_branch }}
+      CONCLUSION: ${{ github.event.workflow_run.conclusion }}
+      SHA: ${{ github.event.workflow_run.head_sha }}
+      RUN_URL: ${{ github.event.workflow_run.html_url }}
+    steps:
+      - run: |
+          title="$WORKFLOW misslyckas på $BRANCH"
+          issue=$(gh issue list --label ci-failure --state open --limit 100 --json number,title |
+            jq -r --arg t "$title" '[.[] | select(.title == $t)][0].number // empty')
+          if [ "$CONCLUSION" = success ]; then
+            [ -z "$issue" ] || gh issue close "$issue" --comment "Går igenom igen vid ${SHA:0:7}: $RUN_URL"
+          elif [ -n "$issue" ]; then
+            gh issue comment "$issue" --body "Misslyckas fortfarande ($CONCLUSION) vid ${SHA:0:7}: $RUN_URL"
+          else
+            gh issue create --title "$title" --label ci-failure --assignee "$OWNER" \
+              --body "$WORKFLOW slutade med \`$CONCLUSION\` på \`$BRANCH\` vid ${SHA:0:7}: $RUN_URL
+
+          Issuen stängs av sig själv när $WORKFLOW går igenom igen på \`$BRANCH\`."
+          fi
