@@ -129,6 +129,9 @@ Vill du inte ha värden som lösenord i compose-filen lägger du dem som `NAMN=v
 
 ## Changelog
 
+**1.1.1**
+- `tools/render.mjs` läser och skriver varje fil genom samma filbeskrivare, så att filen inte kan bytas ut mellan kontroll och skrivning.
+
 **1.1.0**
 - Inställningar kan ges en gång i `/data/import.env` i stället för i compose-filen. De sparas i `/data/settings.env` och importfilen raderas.
 - Imagen byggs från projektets eget repo: `docker build -t jobb .`.
