@@ -7,7 +7,7 @@
 #
 # BROWSER_MODE=bundled (default) uses the Chrome installed below, so job
 # searches work without any Cloudflare account.
-FROM node:22-bookworm-slim
+FROM node:24-bookworm-slim
 
 ENV NODE_ENV=production \
     WRANGLER_SEND_METRICS=false \
