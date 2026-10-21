@@ -1,0 +1,21 @@
+// The documentation site on Cloudflare, under /docs on the app's own host: a
+// Worker with only static assets (no script, so requests are free and
+// unlimited), built from the same sources as GitHub Pages. Workers Builds runs,
+// on every push to main:
+//   build:  sh tools/docs-cloudflare.sh
+//   deploy: npx wrangler deploy --config wrangler.docs.jsonc
+// The route (<host>/docs*) is set on the Worker in Cloudflare, not here, since
+// the host is a personal value. A route runs before the app's custom domain,
+// so /docs reaches this Worker and every other path the app.
+{
+  "name": "jobb-docs",
+  "compatibility_date": "2026-10-21",
+  "assets": {
+    "directory": "./site-cf",
+    "html_handling": "auto-trailing-slash",
+    "not_found_handling": "404-page",
+  },
+  "workers_dev": false,
+  "preview_urls": false,
+  "observability": { "enabled": false },
+}
