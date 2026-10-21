@@ -21,6 +21,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
+      actions: read
       issues: write
     concurrency:
       group: larm-${{ github.event.workflow_run.name }}-${{ github.event.workflow_run.head_branch }}
@@ -34,8 +35,15 @@ jobs:
       CONCLUSION: ${{ github.event.workflow_run.conclusion }}
       SHA: ${{ github.event.workflow_run.head_sha }}
       RUN_URL: ${{ github.event.workflow_run.html_url }}
+      RUN_ID: ${{ github.event.workflow_run.id }}
+      WORKFLOW_ID: ${{ github.event.workflow_run.workflow_id }}
     steps:
       - run: |
+          # Only the latest completed run of this workflow on this branch
+          # counts, so an older run handled late cannot reopen or close the issue.
+          latest=$(gh run list --workflow "$WORKFLOW_ID" --branch "$BRANCH" --status completed \
+            --limit 1 --json databaseId --jq '.[0].databaseId')
+          [ "$latest" = "$RUN_ID" ] || exit 0
           title="$WORKFLOW misslyckas på $BRANCH"
           issue=$(gh issue list --label ci-failure --state open --limit 100 --json number,title |
             jq -r --arg t "$title" '[.[] | select(.title == $t)][0].number // empty')
