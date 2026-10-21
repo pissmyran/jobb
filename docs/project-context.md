@@ -43,7 +43,7 @@ Appens `apps/jobb/wrangler.jsonc` är deployment-konfigurationen och binder:
 - Cron `0 9 10-13 * *`.
 - Custom domain `<din-host>`.
 
-Workspace använder pnpm 10.17.1. Root-skripten kör repoövergripande typecheck/test och produktionens deploykommando applicerar D1-migrationer före Wrangler deploy.
+Workspace använder den pnpm-version som står i `packageManager` i `package.json`. Root-skripten kör repoövergripande typecheck/test och produktionens deploykommando applicerar D1-migrationer före Wrangler deploy.
 
 ## Körningsmodell
 

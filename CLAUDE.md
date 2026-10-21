@@ -27,7 +27,8 @@ Never write a real id, domain, e-mail address, key, name, donation link or payme
 ## Commands
 
 ```bash
-npx pnpm@10.17.1 install && npx pnpm@10.17.1 typecheck && npx pnpm@10.17.1 test
+P="npx --yes $(node -p "require('./package.json').packageManager")"   # pnpm from packageManager
+$P install && $P typecheck && $P test
 ```
 
 Formatting: Prettier with `.prettierrc.json` (printWidth 100). Run `npx prettier --write <paths>` after editing; CI runs `prettier --check .`. Tests that read source files must not depend on formatting; prefer importing and calling real code over matching source text.
@@ -53,10 +54,10 @@ Logging, as in the sibling repos: logs at sampling 1 with invocation logs, trace
 
 The repo is public on GitHub (`VineDrinker/jobb`).
 
-- All work happens on `dev`. `main` changes only through a pull request from `dev`, merged with a merge commit (no squash or rebase). Nobody pushes directly to `main`.
-- Before starting new work, bring `dev` up to date: `git pull --ff-only origin main`, then push `dev`. `main` requires branches to be up to date, and after each merge the merge commit exists only on `main`.
+- All work happens on `dev`. `main` changes only through a pull request from `dev`, merged with a squash merge (the only method allowed). Nobody pushes directly to `main`.
+- Before starting new work, bring `dev` up to date: `git pull --no-rebase origin main`, then push `dev`. A squash merge leaves `main` with a commit `dev` does not have, so this is a merge unless `dev` can fast-forward; `dev` can never be force-pushed or deleted.
 - Before pushing to `dev`, run the tests once per finished change set.
-- Open the PR with `gh pr create --base main --head dev --assignee VineDrinker` and turn on auto-merge with `gh pr merge <number> --auto --merge`. GitHub merges it by itself once the rules on `main` are met: tests, the Docker build, dependency review and CodeQL green, no approval needed.
+- Open the PR with `gh pr create --base main --head dev --assignee VineDrinker` and turn on auto-merge with `gh pr merge <number> --auto --squash`. GitHub merges it by itself once the rules on `main` are met: the tests and `Docker-bild` green and no CodeQL errors or high-severity security alerts, no approval needed; the branch need not be up to date.
 - When CI, Docker or Release fails, `.github/workflows/larm.yml` opens an issue labelled `ci-failure` assigned to the owner (or comments on the open one) and closes it when the workflow passes again. Nobody needs to watch GitHub.
 - Review findings are input, not a to-do list: a fault gets a fix, a finding that shows the design went wrong gets a rethink or a rewrite, noise is dismissed with a reason. Never use CI or review rounds as a debugging loop.
-- Dependabot opens PRs only for security fixes; other dependencies are updated locally about once a month. Workflows use only GitHub's own actions, pinned by commit SHA, with a read-only token, and never `pull_request_target`. Nothing may be enabled that can cost money.
+- Renovate keeps dependencies on their LTS, stable or latest versions (shared config in the account's `.github` repo) and merges its own PRs with squash once the checks pass; Dependabot only raises security alerts. Tool versions are never pinned separately in CI or Dockerfiles when the manifest already names them. Workflows use only GitHub's own actions, pinned by commit SHA, with a read-only token, and never `pull_request_target`. Nothing may be enabled that can cost money.

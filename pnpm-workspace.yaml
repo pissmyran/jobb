@@ -4,9 +4,9 @@ packages:
 
 # These install scripts are intentionally not needed by this Worker build.
 # Declaring them here keeps pnpm's supply-chain protection without warning.
-ignoredBuiltDependencies:
-  - esbuild
-  - workerd
+allowBuilds:
+  esbuild: false
+  workerd: false
 
 # Temporary transitive security override until Wrangler/Miniflare ships undici >= 7.29.1.
 overrides:
