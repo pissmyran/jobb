@@ -1,0 +1,17 @@
+// The documentation site on Cloudflare: a Worker with only static assets (no
+// script, so requests are free and unlimited), built from the same sources as
+// GitHub Pages. Workers Builds runs, on every push to main:
+//   build:  pip install --no-deps -r requirements-docs.txt && node tools/docs-site.mjs && zensical build
+//   deploy: npx wrangler deploy --config wrangler.docs.jsonc
+// The address (custom domain) is set on the Worker in Cloudflare, not here.
+{
+  "name": "jobb-docs",
+  "compatibility_date": "2026-10-21",
+  "assets": {
+    "directory": "./site",
+    "not_found_handling": "404-page",
+  },
+  "workers_dev": true,
+  "preview_urls": false,
+  "observability": { "enabled": false },
+}

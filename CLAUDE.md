@@ -45,7 +45,7 @@ Logging, as in the sibling repos: logs at sampling 1 with invocation logs, trace
 
 ## Documentation site
 
-`README.md`, `docker/README.md` and `docs/` are also the documentation site on GitHub Pages, built with Zensical (`zensical.toml`, pinned in `requirements-docs.txt`) and published from `main` by `.github/workflows/pages.yml`. Build it locally with `node tools/docs-site.mjs && zensical build` (output in `site/`). `tools/docs-site.mjs` makes the README the start page and points links to files outside the site at GitHub. The same pages are mirrored one way into the GitHub wiki by `.github/workflows/wiki.yml` (`node tools/docs-site.mjs --wiki <dir>`), so never edit the wiki. Keep the README's `**Dokumentation:**` line at the top, and add every new page under `docs/` to `nav` in `zensical.toml`; the nav titles are also the wiki page names.
+`README.md`, `docker/README.md` and `docs/` are also the documentation site on GitHub Pages, built with Zensical (`zensical.toml`, pinned in `requirements-docs.txt`) and published from `main` by `.github/workflows/pages.yml`, and on Cloudflare as an assets-only Worker (`wrangler.docs.jsonc`, deployed by Workers Builds). Build it locally with `node tools/docs-site.mjs && zensical build` (output in `site/`). `tools/docs-site.mjs` makes the README the start page and points links to files outside the site at GitHub. The same pages are mirrored one way into the GitHub wiki by `.github/workflows/wiki.yml` (`node tools/docs-site.mjs --wiki <dir>`), so never edit the wiki. Keep the README's `**Dokumentation:**` line at the top, and add every new page under `docs/` to `nav` in `zensical.toml`; the nav titles are also the wiki page names.
 
 ## Docker image
 
