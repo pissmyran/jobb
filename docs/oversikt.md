@@ -54,6 +54,3 @@ Läs Architecture, Providers och Operations. Browser Run är en tydlig integrati
 - Workflow: exekveringsorkestrering.
 - Browser Run: browserbaserad providerinteraktion.
 - Dashboard: presentation/operativ kontroll, inte alternativ source of truth.
-
-## Wiki
-
