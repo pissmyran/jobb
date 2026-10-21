@@ -14,7 +14,7 @@
 //
 // The wiki is a one-way mirror: its pages are flat (Home, Docker and one page
 // per nav title), with _Sidebar.md for the menu and _Footer.md saying where to
-// make changes. .github/workflows/pages.yml writes it on every push to main.
+// make changes. .github/workflows/wiki.yml writes it on every push to main.
 import {
   cpSync,
   existsSync,
