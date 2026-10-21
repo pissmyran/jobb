@@ -1,5 +1,7 @@
 # jobb
 
+**Dokumentation:** [vinedrinker.github.io/jobb](https://vinedrinker.github.io/jobb/) – start, dokumentation och Docker på en sida med sök.
+
 Jobb är en Cloudflare-baserad applikation för jobbsökning och ansökningsautomation med D1, R2, Browser Run och Cloudflare Workflows. Systemet håller auditerbar state för körningar, ansökningar, fel och evidence.
 
 ## Operator-wizard
@@ -22,7 +24,7 @@ pnpm test
 
 ## Dokumentation
 
-Börja i **[dokumentationsöversikten](docs/index.md)**.
+Börja i **[dokumentationsöversikten](docs/oversikt.md)**.
 
 - [Automation](docs/automation.md) — scheduling, quota, dashboard, månadsfil och e-post
 - [Providers](docs/providers.md) — providerbeteende och integrationsgränser

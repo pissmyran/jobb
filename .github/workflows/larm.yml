@@ -1,4 +1,4 @@
-# Raises the alarm when CI, Docker or Release fails on this repo's own
+# Raises the alarm when CI, Docker, Release or Pages fails on this repo's own
 # branches: opens an issue labelled ci-failure and assigned to the owner, so
 # GitHub sends a notification, or comments on the one already open. The issue
 # closes itself when the same workflow passes again on the same branch.
@@ -6,7 +6,7 @@ name: Larm
 
 on:
   workflow_run:
-    workflows: [CI, Docker, Release]
+    workflows: [CI, Docker, Release, Pages]
     types: [completed]
 
 permissions:
