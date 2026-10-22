@@ -75,7 +75,7 @@ Välj med `AUTH_MODE`.
 Välj med `BROWSER_MODE`.
 
 - **`bundled`** (standard): Chrome finns i imagen. Inget mer behövs. `shm_size: "1gb"` ger Chrome det delade minne den behöver.
-- **`cloudflare`**: Cloudflare Browser Rendering kör webbläsaren. Imagen blir då inte mindre, men datorn som kör containern slipper köra Chrome. Fyll i `CLOUDFLARE_API_TOKEN` och `CLOUDFLARE_ACCOUNT_ID`. Skapa ett eget token för containern med bara *Browser Rendering Edit* (kontot) och ett slutdatum, och använd inte ett deploy-token. Stoppar wrangler vid starten med ett behörighetsfel, lägg till *Workers Editor* (kontot) på samma token: wranglers fjärrbindningar kan behöva det. Browser Rendering debiteras per webbläsartimme utöver Cloudflares gratisnivå.
+- **`cloudflare`**: Cloudflare Browser Rendering kör webbläsaren. Imagen blir då inte mindre, men datorn som kör containern slipper köra Chrome. Fyll i `CLOUDFLARE_API_TOKEN` (behörighet *Browser Rendering: Edit*) och `CLOUDFLARE_ACCOUNT_ID`. Browser Rendering debiteras per webbläsartimme utöver Cloudflares gratisnivå.
 
 ## Inställningar
 
