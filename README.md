@@ -57,6 +57,23 @@ Koden innehåller inga kontouppgifter. Där ett eget värde behövs, som domän,
 
 **Alternativ 2: Workers Builds med GitHub-koppling.** Lägg in värdena som *build variables* i Cloudflare (Workers → din Worker → Settings → Build), sätt byggkommandot till `node tools/render.mjs - build` och deploykommandot till `npx wrangler deploy --cwd build`. Bygg bara produktionsgrenen (stäng av bygg för andra grenar), så skapas inga förhandsversioner. Hemligheter läggs in som i alternativ 1.
 
+### API-tokens och behörigheter
+
+Ge varje token bara det som står här, och sätt ett slutdatum (till exempel ett år) så att det roteras. Namnen är behörigheterna som de heter när du skapar ett eget token i Cloudflare. Workern själv gör inga anrop mot Cloudflares API, så den behöver inget token vid körning.
+
+- **Deploy-token** (för `wrangler deploy` från din egen dator):
+  - *Workers Editor* (kontot): Workern och Workflowet
+  - *D1 Write* (kontot): databasen och migreringarna
+  - *Workers R2 Storage Write* (kontot): bucketen för underlag
+  - *Secrets Store Edit* (kontot): binder `JOBB_CONFIG_KEY` från Secrets Store
+  - *Browser Rendering Edit* (kontot): webbläsarbindningen
+  - *Account Settings Read* (kontot)
+  - *Workers Routes Write* (bara din zon): den egna domänen
+  - *Zone Read* (bara din zon)
+  - Valfritt för felsökning: *Workers Observability Read* och *Workers Tail Read* (kontot)
+- **Workers Builds** (alternativ 2): Cloudflare skapar och använder ett eget byggtoken. Kontrollera under Settings → Build att det har samma behörigheter som deploy-tokenet ovan, särskilt *Secrets Store Edit* och *Browser Rendering Edit*.
+- **`CLOUDFLARE_API_TOKEN` i Docker** (bara med `BROWSER_MODE=cloudflare`): ett eget token med bara *Browser Rendering Edit*, se avsnittet om webbläsaren i [docker/README.md](docker/README.md). Använd inte deploy-tokenet här.
+
 ## Köra med Docker
 
 Kopiera `docker-compose.yml`, fyll i värdena och kör `docker compose up -d`. Alla inställningar beskrivs i [docker/README.md](docker/README.md). Vill du inte ha värdena i compose-filen kan du lägga dem som `NAMN=värde`-rader i `import.env` i datakatalogen och starta om. Containern sparar dem i `settings.env`, som bara containern kan läsa, och raderar importfilen. Imagen byggs från repots rot med `docker build -t jobb .`.

@@ -18,8 +18,8 @@
 # Browser for the job searches (BROWSER_MODE):
 #   bundled     – Chrome is already inside the image. Nothing else is needed.
 #   cloudflare  – Cloudflare Browser Rendering (billed per browser hour). Fill in
-#                 CLOUDFLARE_API_TOKEN (permission "Browser Rendering: Edit") and
-#                 CLOUDFLARE_ACCOUNT_ID.
+#                 CLOUDFLARE_API_TOKEN (its own token with only "Browser
+#                 Rendering Edit"; never a deploy token) and CLOUDFLARE_ACCOUNT_ID.
 services:
   jobb:
     image: docker.io/driftaegis/jobb:1
