@@ -1,10 +1,6 @@
-# Drift och verifiering
+# Drift
 
-**Senast verifierad mot repositoryt:** 2026-10-01
-
-## Lokal verifiering
-
-Från `apps/jobb` i monorepot:
+## Kontroller före push
 
 ```bash
 pnpm install --frozen-lockfile
@@ -12,96 +8,75 @@ pnpm typecheck
 pnpm test
 ```
 
-Appens rootskript kör motsvarande workspacekontroller för projekten under `apps/*` och `packages/*`.
-
 ## Lokal utveckling
 
+1. Kopiera `.dev.vars.example` till `.dev.vars` och fyll i värdena.
+2. Kör `pnpm dev`. Den startar Wrangler med `wrangler.jsonc` i repots rot.
+
+## Driftsättning
+
+Produktionen driftsätts från en renderad kopia med dina egna värden, antingen från din dator eller med Workers Builds när en PR mergas till `main`; se `README.md`. CI på GitHub kör tester, Docker-bygge och CodeQL. Det finns ingen förhandsmiljö.
+
+## Migreringar
+
+Workers Builds kör inte D1-migreringarna, så de körs för hand från en renderad kopia:
+
 ```bash
-pnpm dev
+node tools/render.mjs <din-fil.env> build
+npx wrangler d1 migrations apply DB --remote --cwd build
 ```
 
-Det kör `@jobb/web`-paketets Wrangler-baserade devscript.
+- **En migrering som lägger till** tabeller eller kolumner körs före deployen av den nya Workern.
+- **En migrering som tar bort** tabeller eller kolumner körs efter att den nya Workern är ute.
 
-## Deployment
+## Kontrollista efter driftsättning
 
-Produktion driftsätts från en renderad kopia med dina egna värden, se avsnittet om Cloudflare i `README.md`: kör typecheck och tester, rendera med `tools/render.mjs`, kör remote D1-migrationerna mot den renderade `wrangler.jsonc` och deploya kopian. CI på GitHub kör tester, Docker-bygge och CodeQL vid varje push till `main`. Det finns ingen förhandsmiljö.
+1. **Inloggning:** öppna översikten i ett privat fönster och logga in via Cloudflare Access.
+2. **Beredskap:** `GET /api/ready` ska svara `200` med `database`, `dashboardAuth` och `runtimeConfiguration` satta till `true`.
+3. **Bindningar:** Workern ska ha D1 `DB`, R2 `EVIDENCE`, Browser Rendering `BROWSER`, Email `EMAIL`, Workflow `jobb-automation` och Secrets Store `JOBB_CONFIG_KEY`.
+4. **StudentConsulting:** kontrollera under **Körningar** att den senaste körningen loggade in och nådde *Matcha jobb*. Ett sparat lösenord räcker inte som bevis på att kontot fungerar.
 
-## D1 data locality
+## D1
 
-Produktionsbindingen `DB` ska använda en D1-databas skapad med `jurisdiction=eu`. Cloudflare tillåter inte att jurisdiction läggs till eller ändras efter att databasen skapats, så ett framtida byte ska göras som en kontrollerad export/import till en ny EU-databas före binding-cutover.
+- Databasen ska vara skapad med `jurisdiction=eu`. Det går inte att ändra efteråt, så ett byte görs som export och import till en ny EU-databas innan bindningen byts.
+- Läsrepliker ska vara avstängda så länge koden inte använder D1 Sessions API.
 
-Read replication ska vara avstängd tills Jobbs D1-requestväg använder D1 Sessions API. Att aktivera repliker utan Sessions API flyttar inte querytrafik från primären.
+## Före en manuell omkörning
 
-## Readiness
-
-`GET /api/health` är minimal liveness.
-
-`GET /api/ready` verifierar D1, att dashboard-authkonfigurationen är användbar och att `0006_runtime_configuration.sql` både finns i schemat och är registrerad i D1:s migrationshistorik. Readiness får inte exponera credential-värden.
-
-## Månadskörning
-
-Kontrollera före manuell omkörning:
-
-1. aktuell månads stable run,
-2. quota slots,
-3. applications med `uncertain` state,
-4. senaste providerfel/evidence,
-5. att en ny körning inte kan överskrida månadsgränsen.
-
+1. Månadens körning `scheduled:ÅÅÅÅ-MM` och dess status.
+2. Månadens platser i månadsgränsen.
+3. Ansökningar som är `uncertain`.
+4. Senaste fel och bevis från StudentConsulting.
+5. Att en ny körning inte kan gå över tio.
 
 ## Stoppa och radera körningar
 
-I den autentiserade dashboardens körningsdetaljer kan en aktiv `running`-körning stoppas. Om en Cloudflare Workflow-instance finns termineras den först och D1-raden finaliseras som `failed` med `RUN_STOPPED_BY_USER`. En terminal körning kan raderas endast när den saknar ansökningshistorik; då raderas eventuell Workflow-instance samt run-bundna notifications/probes och därefter run-raden. Körningar som har applications bevaras för spårbarhet och får inte raderas från dashboarden.
+En körning som står som `running` kan stoppas i körningens detaljer. Workflow-instansen avslutas först, och körningen sparas som `failed` med `RUN_STOPPED_BY_USER`. En avslutad körning kan raderas bara om den saknar ansökningar; då raderas också dess Workflow-instans, utskick och integrationskontroller. Körningar med ansökningar sparas alltid.
 
-## Workflow/orphan-incident
+## Övergivna körningar
 
-En automation räknas som **orphaned** när D1 fortfarande visar `running`, `workflow_instance_id` saknas, ingen application är kopplad till runnen och `updated_at` är äldre än fem minuter. Dashboarden visar sådana rader som **Övergivna körningar** i stället för som aktiva.
+En körning räknas som övergiven när D1 visar `running`, ingen Workflow-instans är kopplad, inga ansökningar finns och `updated_at` är äldre än fem minuter. Den visas som övergiven i översikten och sätts till `failed` innan nästa start.
 
-Före varje manuell eller schemalagd start reconcilerar Workern orphaned rader till `failed`. Den atomiska run-claimen tillåter därefter högst en `running` automation åt gången. En failed `scheduled:YYYY-MM`-retry återställs till rent `running`-state innan nytt Workflow startas.
+Vid en incident, kontrollera i den här ordningen:
 
-Vid incident, kontrollera i denna ordning:
+1. Workflow-instansens status och fel i Cloudflare.
+2. `automation_runs.status`, `workflow_instance_id`, `last_error` och `updated_at` i D1.
+3. Om körningen har ansökningar, försök eller kan ha skickat något till StudentConsulting.
+4. Platserna i månadsgränsen och eventuella `uncertain` innan ett nytt försök.
 
-1. Cloudflare Workflow-instansens status och fel,
-2. D1 `automation_runs.status`, `workflow_instance_id`, `last_error`, `updated_at`,
-3. om runnen har applications/attempts eller provider-side effects,
-4. quota slots och eventuell `uncertain` state innan retry.
+En körning som kan ha skickat något till StudentConsulting får aldrig behandlas som övergiven bara för att Workflow-kopplingen saknas.
 
-Korrigera inte en run med observerade provider-side effects som orphaned enbart för att Workflow-länken saknas. Om direkt D1-write saknar behörighet ska state återställas genom den versionerade reconciliation/startvägen efter deployment, inte genom att byta Cloudflare-identitet eller kringgå behörighetsmodellen.
+## Fel hos StudentConsulting
 
-## Browser/providerincident
+- Låt körningens state i D1 stå kvar.
+- Markera en oklar ansökan som `uncertain`.
+- Försök inte igen blint om StudentConsulting kan ha tagit emot ansökan.
+- Kontrollera bevis och StudentConsultings egen historik innan något skickas igen.
 
-Vid browser/providerfel:
+## Inloggningsfel
 
-- bevara run/application state i D1,
-- klassificera oklar submission som `uncertain`,
-- undvik blind retry om providern kan ha accepterat submission,
-- kontrollera evidence och providerstate innan ny submission tillåts.
+1. Kontrollera Access-applikationen för domänen och dess policy i Zero Trust.
+2. Kontrollera att `CF_ACCESS_AUD` är applikationens AUD-tagg och `CF_ACCESS_TEAM_DOMAIN` är `<team>.cloudflareaccess.com`.
+3. Kontrollera att `/api/ready` visar `dashboardAuth: true`.
 
-## Cloudflare Access
-
-Vid loginfel verifiera:
-
-- Access-appen för `<din-host>` och dess policy i Zero Trust-dashboarden,
-- att `CF_ACCESS_AUD` är appens Application Audience-tagg och `CF_ACCESS_TEAM_DOMAIN` är `<team>.cloudflareaccess.com`,
-- att `/api/ready` rapporterar `dashboardAuth: true` (Access konfigurerad och `JOBB_CONFIG_KEY` läsbar).
-
-Lägg inte till Basic Auth eller parallell authväg som fallback.
-
-## Evidence och privacy
-
-R2-evidence ska vara begränsad till det som behövs för auditability.
-
-## Observability
-
-`apps/jobb/wrangler.jsonc` definierar:
-
-- persistent observability,
-- log sampling `1` (alla loggar; koden loggar bara fel och enstaka rader per körning),
-- trace sampling `0.01`,
-- `redact_query_string=true`.
-
-OAuth callback-parametrar kan förekomma i query string; redaction ska därför behållas. Credentials, sessionsmaterial och privata providerpayloads får inte läggas i logs.
-
-## Dokumentationsunderhåll
-
-Uppdatera denna fil när appens test-/deployscripts, runtimebindings, migrationsordning eller incidentmodell ändras. Extern live-state ska verifieras i sitt auktoritativa system och inte kopieras in som permanent app-current-state.
+Lägg aldrig till Basic Auth eller en annan inloggningsväg som reserv.

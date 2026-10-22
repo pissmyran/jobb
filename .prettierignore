@@ -9,5 +9,3 @@ pnpm-lock.yaml
 bun.lock
 *.json
 *.jsonc
-kontakter
-forening

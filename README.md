@@ -1,20 +1,19 @@
-# jobb
+# Jobb
 
 **Dokumentation:** [vinedrinker.github.io/jobb](https://vinedrinker.github.io/jobb/) – start, dokumentation och Docker på en sida med sök.
 
-Jobb är en Cloudflare-baserad applikation för jobbsökning och ansökningsautomation med D1, R2, Browser Run och Cloudflare Workflows. Systemet håller auditerbar state för körningar, ansökningar, fel och evidence.
+Jobb söker jobb på StudentConsulting åt dig och samlar månadens ansökningar i en textfil. Det körs som en Cloudflare Worker med D1, R2, Browser Rendering och Workflows, eller som en färdig Docker-image.
 
-## Operator-wizard
+## Vad den gör
 
-Provider-/credentialförutsättningar verifieras utan att exportera eller skriva secretvärden:
+- **Söker** till passande jobb i StudentConsultings vy *Matcha jobb*, med valfria extra filter på ord, ort och land.
+- **Stannar vid tio:** högst tio ansökningar per kalendermånad. En ansökan räknas först när StudentConsulting själv visar den som inskickad, och ett oklart resultat blockerar i stället för att ge plats åt en elfte.
+- **Samlar månaden** i `jobbansokningar_ÅÅÅÅ-MM-DD.txt` med jobb-ID, jobbtyp, stad och omfattning. Filen kan laddas ner eller mejlas till en eller flera mottagare.
+- **Körs av sig själv** den 10:e varje månad, med omförsök den 11:e–13:e, och kan startas för hand den 1:a–14:e.
 
-```bash
-bash scripts/setup-provider-credentials.sh
-```
+Jobb rapporterar inte till Arbetsförmedlingen; det finns inget API för det.
 
-Wizarden är human-only och verifierar befintlig provider-state; den skapar eller roterar inga credentials.
-
-## Snabb verifiering
+## Tester
 
 ```bash
 pnpm install --frozen-lockfile
@@ -24,43 +23,45 @@ pnpm test
 
 ## Dokumentation
 
-Börja i **[dokumentationsöversikten](docs/oversikt.md)**.
+Börja i [översikten](docs/oversikt.md).
 
-- [Automation](docs/automation.md) — scheduling, quota, dashboard, månadsfil och e-post
-- [Providers](docs/providers.md) — providerbeteende och integrationsgränser
-- [Projektkontext](docs/project-context.md) — aktuell teknisk state
-- [Arkitektur](docs/architecture.md) — runtime, state och trust boundaries
-- [Authentication](docs/authentication.md) — dashboardauth/Cloudflare Access
-- [Discovery](docs/discovery.md) — sök-/discoveryflöde
-- [Drift](docs/operations.md) — verifiering, deployment och incidentkontroller
-
-README är en ingång, inte en driftmanual.
-
-## Grundinvarianter
-
-- D1 är canonical run/application state; R2 innehåller stödjande evidence.
-- osäkra eller tvetydiga providerutfall ska inte behandlas som verifierad framgång.
-- användarstyrd e-legitimation/signering ska inte automatiseras.
-- auth- och providercredentials får inte hamna i repository, logs eller publik dokumentation.
+- [Arkitektur](docs/architecture.md): bindningar, state och säkerhet
+- [Automation](docs/automation.md): översikten, körningar, månadsgränsen, månadsfilen och inställningar
+- [StudentConsulting](docs/providers.md): inloggning, sökning, ansökan och verifiering
+- [Inloggning och nycklar](docs/authentication.md): Cloudflare Access, lösenordsläget och krypterade inställningar
+- [Drift](docs/operations.md): driftsättning, migreringar, kontroller och felsökning
 
 ## Driftsätta på ett eget Cloudflare-konto
 
 Koden innehåller inga kontouppgifter. Där ett eget värde behövs, som domän, resurs-id eller nycklar, står en platshållare (`__NAMN__`). Alla platshållare finns i `cloudflare.example.env`, med en kommentar om var värdet hämtas. Värdena hamnar bara i Cloudflare, aldrig i repot.
 
-**Alternativ 1: deploy från din egen dator (standard).**
+**Alternativ 1: deploy från din egen dator.**
 
-1. Kopiera `cloudflare.example.env` till en egen fil utanför repot och fyll i dina värden.
-2. Rendera en kopia med dina värden: `node tools/render.mjs <din-fil.env> build [overlay-katalog]`. Verktyget stoppar om ett värde saknas. Filer i overlay-katalogen kopieras ovanpå, till exempel egna bilder.
-3. Lägg in hemligheter en gång, antingen var för sig med `npx wrangler secret put <NAMN>` eller alla på en gång från en JSON-fil med `npx wrangler secret bulk <fil.json>`. Radera filen efteråt.
-4. Kör databasmigreringarna (se `docs/`) och deploya: `npx wrangler deploy --cwd build`.
-5. Radera `build/`. Cloudflare har nu värdena. Vill du ändra något fyller du i filen igen och upprepar steg 2 och 4.
+1. Skapa resurserna: en D1-databas (`npx wrangler d1 create <namn> --jurisdiction eu`), R2-bucketen `jobb-evidence` och hemligheten `JOBB_CONFIG_KEY` i Secrets Store (en lång slumpmässig sträng).
+2. Kopiera `cloudflare.example.env` till en egen fil utanför repot och fyll i dina värden.
+3. Rendera en kopia med dina värden: `node tools/render.mjs <din-fil.env> build`. Verktyget stoppar om ett värde saknas.
+4. Kör databasmigreringarna: `npx wrangler d1 migrations apply DB --remote --cwd build`.
+5. Deploya: `npx wrangler deploy --cwd build`.
+6. Radera `build/`. StudentConsulting-kontot och övriga inställningar sparas sedan under **System** i översikten.
 
-**Alternativ 2: Workers Builds med GitHub-koppling.** Lägg in värdena som *build variables* i Cloudflare (Workers → din Worker → Settings → Build), sätt byggkommandot till `node tools/render.mjs - build` och deploykommandot till `npx wrangler deploy --cwd build`. Bygg bara produktionsgrenen (stäng av bygg för andra grenar), så skapas inga förhandsversioner. Hemligheter läggs in som i alternativ 1.
+**Alternativ 2: Workers Builds med GitHub-koppling.** Lägg in värdena som *build variables* i Cloudflare (Workers → din Worker → Settings → Build), sätt byggkommandot till `node tools/render.mjs - build` och deploykommandot till `npx wrangler deploy --cwd build`. Bygg bara produktionsgrenen. Workers Builds kör inte migreringarna; se [Drift](docs/operations.md).
 
 ## Köra med Docker
 
-Kopiera `docker-compose.yml`, fyll i värdena och kör `docker compose up -d`. Alla inställningar beskrivs i [docker/README.md](docker/README.md). Vill du inte ha värdena i compose-filen kan du lägga dem som `NAMN=värde`-rader i `import.env` i datakatalogen och starta om. Containern sparar dem i `settings.env`, som bara containern kan läsa, och raderar importfilen. Imagen byggs från repots rot med `docker build -t jobb .`.
+Jobb finns som färdig image på Docker Hub, `docker.io/driftaegis/jobb`. Du behöver inte bygga något själv: i `docker-compose.yml` står imagen så här, och `docker compose up -d` hämtar den.
+
+I `docker-compose.yml`:
+
+```yaml
+    image: docker.io/driftaegis/jobb:1
+```
+
+Taggen `1` ger alla uppdateringar inom version 1; `X.Y` ger bara rättningar och `X.Y.Z` exakt en version. Alla inställningar beskrivs i [docker/README.md](docker/README.md), och ändringarna listas i [CHANGELOG.md](CHANGELOG.md). Vill du bygga imagen själv från källkoden: `docker build -t jobb .` i repots rot.
 
 ## Bidra
 
 Frågor och idéer tas i [Discussions](https://github.com/VineDrinker/.github/discussions), fel och förslag som issues här. Läs [CONTRIBUTING.md](https://github.com/VineDrinker/.github/blob/main/CONTRIBUTING.md) innan du öppnar en pull request. Säkerhetsproblem rapporteras privat via fliken Security.
+
+## Licens
+
+MIT, se [LICENSE](LICENSE).

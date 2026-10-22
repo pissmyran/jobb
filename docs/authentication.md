@@ -1,33 +1,38 @@
-# Authentication and credentials
+# Inloggning och nycklar
 
-## Dashboard / Cloudflare Access
+## Översikten: Cloudflare Access
 
-Dashboarden skyddas av Cloudflare Access (team `<team>.cloudflareaccess.com`). Access står framför `<din-host>` och sköter inloggning och policy; Workern har ingen egen login-provider, session eller cookie.
+Cloudflare Access står framför Workerns domän och sköter inloggningen. Vem som får logga in styrs av Access-policyn i Zero Trust, inte av Jobb.
 
-Workern verifierar ändå varje request: `Cf-Access-Jwt-Assertion` måste vara en RS256-signerad JWT från teamets `/cdn-cgi/access/certs` med rätt `iss`, `aud` (= `CF_ACCESS_AUD`), giltig `exp`/`nbf` och en e-postadress. Saknad eller ogiltig assertion ger 401/403, så en request som går förbi Access släpps aldrig in. `POST /auth/logout` skickar vidare till `/cdn-cgi/access/logout`; `/login` leder till `/` för gamla bokmärken.
+Workern kontrollerar ändå varje anrop: `Cf-Access-Jwt-Assertion` måste vara en RS256-signerad JWT från teamets `/cdn-cgi/access/certs`, med rätt `iss`, `aud` (= `CF_ACCESS_AUD`), giltig `exp` och `nbf` och en e-postadress. Ett anrop som tar sig förbi Access släpps alltså ändå inte in.
 
-Runtimekontrakt:
+- `CF_ACCESS_TEAM_DOMAIN` är teamdomänen, `<team>.cloudflareaccess.com`.
+- `CF_ACCESS_AUD` är Access-applikationens *Application Audience (AUD) Tag*.
 
-- `CF_ACCESS_TEAM_DOMAIN` — icke-hemligt, `<team>.cloudflareaccess.com`.
-- `CF_ACCESS_AUD` — icke-hemlig Application Audience-tagg för Access-appen för `<din-host>`.
+Saknas något av dem, eller är de ofullständiga, avvisas alla anrop och `/api/ready` rapporterar fel. `POST /auth/logout` skickar vidare till `/cdn-cgi/access/logout`, och `/login` leder till `/`.
 
-Vem som får logga in styrs av Access-policyn i Zero Trust-dashboarden, inte av Worker-konfiguration. Basic Auth och parallella login-vägar ska inte införas.
+## Lösenordsläget (egen installation)
 
-## StudentConsulting
+Med `AUTH_MODE=password` skyddas översikten i stället av `ADMIN_PASSWORD` (minst 8 tecken) och en HMAC-signerad sessionscookie som gäller i 30 dagar. Byte av lösenord loggar ut alla. Läget är till för Docker och andra egna installationer och sätts aldrig i produktion bakom Access.
 
-StudentConsulting credentials are runtime secrets, never repository configuration.
+## StudentConsulting-kontot
 
-Runtime names:
+`STUDENTCONSULTING_EMAIL` och `STUDENTCONSULTING_PASSWORD` sätts antingen som hemligheter på Workern eller sparas under **System**. Hemligheter på Workern går före. Lokalt kan de ligga i `.dev.vars`, som aldrig checkas in.
 
-- `STUDENTCONSULTING_EMAIL`
-- `STUDENTCONSULTING_PASSWORD`
+Koden får kontot genom en `CredentialsProvider`. Lösenordet loggas aldrig, skrivs aldrig till R2, skickas aldrig tillbaka i API-svar och syns aldrig i skärmbilder. Det enda som sparas i D1 är det krypterade inställningsdokumentet.
 
-Production supports two sources. Explicit Cloudflare runtime values are authoritative. When those values are absent, an authenticated user may save the credentials in System; the managed configuration is AES-GCM encrypted before it is persisted in D1. Local development may use `.dev.vars`, which must remain gitignored.
+## Nyckeln och nyckelbyte
 
-The application code receives effective credentials through an adapter-level `CredentialsProvider`. Plaintext credentials must never be logged, written to R2/evidence, returned through API responses, or included in screenshots. The only permitted D1 persistence is the encrypted `runtime_configuration` ciphertext; its key is HKDF-derived from the Secrets Store secret `JOBB_CONFIG_KEY` with a separate context.
+Inställningsdokumentet krypteras med AES-GCM, med en nyckel som härleds med HKDF ur `JOBB_CONFIG_KEY` i Secrets Store.
 
-Key rotation keeps the stored data: bind the new secret as `JOBB_CONFIG_KEY` and the old one as `JOBB_CONFIG_KEY_PREVIOUS`. The first read that only the previous key can decrypt re-encrypts the row under the current key (without changing `updated_at`/`updated_by`); after that the previous binding can be removed. The configuration row that was encrypted with the former GitHub OAuth client secret could not be migrated because that secret was deleted; it is reported as unreadable and is replaced on the next save in System. External CI/CD credentials are not part of the application auth contract.
+Så byter du nyckel utan att förlora inställningarna:
 
-## Public-repository rule
+1. Lägg den nya nyckeln som `JOBB_CONFIG_KEY` och den gamla som `JOBB_CONFIG_KEY_PREVIOUS`.
+2. Öppna översikten. Första läsningen krypterar om dokumentet med den nya nyckeln, utan att ändra vem eller när det senast ändrades.
+3. Ta bort `JOBB_CONFIG_KEY_PREVIOUS`.
 
-Only secret *names*, interfaces, examples with dummy values, and setup instructions belong in Git. Real credentials never do.
+Ett dokument som ingen av nycklarna kan läsa rapporteras som oläsbart och ersätts nästa gång något sparas under **System**.
+
+## I repot
+
+Bara namnen på hemligheter, gränssnitt, exempel med påhittade värden och instruktioner hör hemma i Git. Riktiga värden gör det aldrig.

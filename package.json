@@ -7,10 +7,7 @@
   "scripts": {
     "typecheck": "pnpm -r typecheck",
     "test": "node --test test/*.test.mjs && pnpm -r test",
-    "dev": "pnpm --filter @jobb/web dev",
-    "deploy": "pnpm --filter @jobb/web deploy",
-    "deploy:cloudflare": "pnpm --filter @jobb/web exec wrangler d1 migrations apply DB --remote --config ../../wrangler.jsonc && pnpm --filter @jobb/web exec wrangler deploy --config ../../wrangler.jsonc",
-    "release": "pnpm typecheck && pnpm test && pnpm deploy:cloudflare"
+    "dev": "pnpm --filter @jobb/web dev"
   },
   "devDependencies": {
     "typescript": "^7.0.2",
