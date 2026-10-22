@@ -76,8 +76,8 @@ export default {
       return renderAuthStyles();
     }
 
-    // Sign-in is handled by Cloudflare Access in front of the Worker; keep the
-    // old GitHub login URL working for bookmarks.
+    // Sign-in happens in Cloudflare Access in front of the Worker, so /login has
+    // no page of its own.
     if (request.method === "GET" && url.pathname === "/login") {
       return redirectTo("/");
     }

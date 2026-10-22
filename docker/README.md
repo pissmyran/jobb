@@ -123,11 +123,15 @@ Vill du inte ha värden som lösenord i compose-filen lägger du dem som `NAMN=v
   - Lösenordssessionen är en signerad cookie (HMAC-SHA256, `HttpOnly`, `SameSite=Strict`). Access-läget kontrollerar RS256-signatur, utfärdare och AUD.
   - Ändrande anrop kräver same-origin.
   - Inställningarna krypteras med AES-GCM, med en nyckel som härleds från `JOBB_CONFIG_KEY` med HKDF. Lösenord visas aldrig igen efter att de har sparats.
-- **Imagen** bygger på `node:24-trixie-slim` (Node LTS på Debian stable), kör som användaren `node` och har en healthcheck mot `/api/health`. Den byggs i två steg, så att bara den neutraliserade källkoden hamnar i det färdiga lagret.
+- **Imagen** bygger på `node:24-trixie-slim` (Node LTS på Debian stable), kör som användaren `node` och har en healthcheck mot `/api/health`. Den innehåller bara källkod med platshållare; dina värden fylls i när containern startar.
 - **Begränsningar:** `wrangler dev` är en utvecklingsserver som kör en process på en maskin. Det räcker för en person. StudentConsultings sidor kan ändras, och då kan sökningen sluta fungera tills imagen uppdateras. Jobb stoppar då hellre än gissar, och felet syns under **Körningar**.
 - **Felsökning:** `docker compose logs -f`. Varje körning, ansökan och försök med felkod finns under **Körningar** i gränssnittet.
 
 ## Changelog
+
+**1.1.3**
+- Imagen bygger på `node:24-trixie-slim`: Node 24 (LTS) på Debian 13 (stable).
+- pnpm-versionen tas från `packageManager` i `package.json`.
 
 **1.1.2**
 - `tools/render.mjs` skriver varje ifylld fil i en loop tills alla byte är skrivna, så att en kort skrivning inte kan lämna en avkortad fil.

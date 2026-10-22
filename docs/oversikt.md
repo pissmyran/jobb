@@ -1,56 +1,38 @@
-# Dokumentation
+# Översikt
 
-Navigationssida för Jobb.
-
-## Hitta rätt
-
-| Område | Dokument |
-| --- | --- |
-| runtime och current-state | [Projektkontext](project-context.md) |
-| komponenter, state och trust boundaries | [Arkitektur](architecture.md) |
-| dashboardauth/Cloudflare Access | [Authentication](authentication.md) |
-| automation, quota och körningsmodell | [Automation](automation.md) |
-| providerintegrationer | [Providers](providers.md) |
-| discovery/sökning | [Discovery](discovery.md) |
-| verifiering, deployment och incidenter | [Drift](operations.md) |
-
-## Systemöversikt
+Jobb är en Cloudflare Worker med en skyddad översikt, en Workflow som gör själva jobbsökningen och en månadsfil med resultatet.
 
 ```text
-Dashboard / scheduler
+Översikten / Cron
         |
         v
-Cloudflare Worker
-  |      |       |
-  |      |       +--> Browser Run
-  |      +----------> Workflows
-  +-----------------> D1 canonical state
-  +-----------------> R2 evidence
-  +-----------------> Email / provider integrations
+Cloudflare Worker ──> D1        körningar, ansökningar, månadsgräns, inställningar
+        |         ──> R2        bevis från verifierade ansökningar
+        |         ──> Email     utskick av månadsfilen
+        v
+Workflow ──> Browser Rendering ──> StudentConsulting
 ```
 
-## Vanliga läsvägar
+## Var finns vad
 
-### Ändra automationslogik
+| Ämne | Sida |
+| --- | --- |
+| Bindningar, state, säkerhet och loggning | [Arkitektur](architecture.md) |
+| Översiktens vyer, körningar, månadsgränsen, felkoder, månadsfilen och inställningar | [Automation](automation.md) |
+| Inloggning, sökning, ansökan och verifiering hos StudentConsulting | [StudentConsulting](providers.md) |
+| Cloudflare Access, lösenordsläget och krypterade inställningar | [Inloggning och nycklar](authentication.md) |
+| Driftsättning, migreringar, kontroller och felsökning | [Drift](operations.md) |
 
-Läs Automation, Project context och Operations. Säkerställ att quota/fail-closed-regler fortsatt håller.
+## Vem äger vilken data
 
-### Ändra provider
+- **D1** är den enda sanningen om körningar, ansökningar och månadsgränsen.
+- **R2** innehåller bara bevis som stöd; inget beslut fattas utifrån R2.
+- **Workflow** styr körningen men lagrar inget eget state som översikten litar på.
+- **Browser Rendering** är bara transporten till StudentConsulting. Webbläsarlogiken stannar i `packages/studentconsulting` och sprids inte in i resten av koden.
+- **Översikten** visar och styr, men är aldrig en egen källa till sanning.
 
-Läs Providers och Architecture. Separera providerfel från workflow/statefel.
+## Innan du ändrar något
 
-### Ändra dashboardauth
-
-Läs Authentication och Architecture innan routes/auth/Cloudflare Access-konfiguration ändras.
-
-### Ändra Browser Run
-
-Läs Architecture, Providers och Operations. Browser Run är en tydlig integrationsgräns och ska inte spridas in i domänlogiken.
-
-## Data ownership
-
-- D1: canonical run/application state.
-- R2: evidence/stöddata.
-- Workflow: exekveringsorkestrering.
-- Browser Run: browserbaserad providerinteraktion.
-- Dashboard: presentation/operativ kontroll, inte alternativ source of truth.
+- **Automationen:** läs [Automation](automation.md) och kontrollera att månadsgränsen och reglerna om att stanna vid osäkerhet fortfarande håller.
+- **StudentConsulting:** läs [StudentConsulting](providers.md) och [Arkitektur](architecture.md). Håll isär fel hos StudentConsulting och fel i körningens state.
+- **Inloggningen:** läs [Inloggning och nycklar](authentication.md) innan du ändrar routes, inloggning eller Access-inställningar.
