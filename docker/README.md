@@ -6,6 +6,8 @@ Allt körs i containern, inklusive webbläsaren som söker jobben. Du behöver i
 
 ## Kom igång
 
+Imagen ligger på Docker Hub som `docker.io/driftaegis/jobb`. Compose-filen nedan hämtar den därifrån, så du behöver varken klona repot eller bygga något.
+
 1. **Installera Docker.** På Windows och Mac: [Docker Desktop](https://www.docker.com/products/docker-desktop/). På Linux: paketet `docker.io` (Debian/Ubuntu) eller motsvarande. Podman fungerar också.
 2. **Skapa en mapp** och en fil i den som heter `docker-compose.yml`. Klistra in innehållet nedan.
 3. **Byt** `ADMIN_PASSWORD` till ett eget lösenord på minst 8 tecken.
