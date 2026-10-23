@@ -1,12 +1,12 @@
-# Raises the alarm when CI, Docker, Release, Pages or Wiki fails on this repo's own
-# branches: opens an issue labelled ci-failure and assigned to the owner, so
+# Raises the alarm when CI, Docker, Release, Pages, Wiki or CodeQL fails
+# on main: opens an issue labelled ci-failure and assigned to the owner, so
 # GitHub sends a notification, or comments on the one already open. The issue
 # closes itself when the same workflow passes again on the same branch.
 name: Larm
 
 on:
   workflow_run:
-    workflows: [CI, Docker, Release, Pages, Wiki]
+    workflows: [CI, Kontroll, Docker, Release, Pages, Wiki, CodeQL]
     types: [completed]
 
 permissions:
@@ -17,6 +17,7 @@ jobs:
     name: Larm
     if: >-
       github.event.workflow_run.head_repository.full_name == github.repository &&
+      github.event.workflow_run.head_branch == 'main' &&
       contains(fromJSON('["success", "failure", "timed_out", "action_required", "startup_failure"]'), github.event.workflow_run.conclusion)
     runs-on: ubuntu-latest
     timeout-minutes: 5

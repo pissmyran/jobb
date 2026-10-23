@@ -1,0 +1,54 @@
+# Kontrollerar att titeln på en pull request till main följer Conventional
+# Commits (typ, valfritt område, kolon, beskrivning), eftersom titeln blir
+# commit-meddelandet på main vid squash merge. Sätter samtidigt en etikett
+# efter typen. PR:er från forks får ingen etikett, eftersom token där bara
+# kan läsa. I merge queue hoppas jobbet över; titeln är redan kontrollerad.
+name: PR-titel
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, edited, synchronize, reopened]
+  merge_group:
+
+permissions: {}
+
+jobs:
+  titel:
+    name: PR-titel
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    permissions:
+      issues: write
+      pull-requests: write
+    steps:
+      - name: Kontrollera titeln och sätt etikett
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR: ${{ github.event.pull_request.number }}
+          TITEL: ${{ github.event.pull_request.title }}
+          FRAN_FORK: ${{ github.event.pull_request.head.repo.full_name != github.repository }}
+        run: |
+          monster='^(feat|fix|docs|refactor|perf|test|build|ci|chore|style|revert)(\([^)]+\))?!?: .+'
+          if ! [[ "$TITEL" =~ $monster ]]; then
+            {
+              echo "Titeln följer inte Conventional Commits: \`$TITEL\`"
+              echo
+              echo "Skriv den som \`typ: beskrivning\` eller \`typ(område): beskrivning\`,"
+              echo "med typ feat, fix, docs, refactor, perf, test, build, ci, chore, style eller revert."
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+          case "${BASH_REMATCH[1]}" in
+            feat) etikett=enhancement ;;
+            fix) etikett=bug ;;
+            docs) etikett=documentation ;;
+            ci) etikett=ci ;;
+            build) etikett=dependencies ;;
+            *) etikett="" ;;
+          esac
+          if [ -n "$etikett" ] && [ "$FRAN_FORK" = false ]; then
+            gh pr edit "$PR" --repo "$REPO" --add-label "$etikett"
+          fi

@@ -33,7 +33,7 @@ jobs:
           path: .wiki
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: 24
+          node-version: node
       - run: node tools/docs-site.mjs --wiki "$RUNNER_TEMP/wiki"
       - name: Skriv över wikin
         working-directory: .wiki
