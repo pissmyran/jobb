@@ -22,7 +22,7 @@
 #                 CLOUDFLARE_ACCOUNT_ID.
 services:
   jobb:
-    image: docker.io/driftaegis/jobb:1
+    image: docker.io/driftaegis/jobb:1@sha256:e39e6f301b9699ab4da9b8255cad6865264073be5d953a2f675eb7e8cc7198f8
     restart: unless-stopped
     ports:
       - "8787:8787"
@@ -52,7 +52,7 @@ services:
       - jobb-data:/data # database, evidence and settings
 
   tunnel:
-    image: docker.io/cloudflare/cloudflared:latest
+    image: docker.io/cloudflare/cloudflared:latest@sha256:faa8e0a1475f137c910be6025f43c8e4092fdd35461b31e19fd1390657a1ff39
     profiles: ["tunnel"]
     restart: unless-stopped
     command: tunnel --no-autoupdate run
