@@ -1,0 +1,50 @@
+# Stoppar PR:er som ändrar workflows, egna actions eller CODEOWNERS.
+# Bara Renovate och Dependabot får ändra dem (de uppdaterar versionerna av
+# actions). Kontrollen är obligatorisk i reglerna för main.
+#
+# Körs som pull_request_target: workflowet kommer alltid från main, aldrig
+# från PR:en, så en PR kan inte ändra eller stänga av sin egen kontroll.
+# Jobbet läser bara listan över ändrade filer via API:t och kör ingen kod
+# från PR:en.
+#
+# Ägaren ändrar workflows genom att stänga av regeln main en stund i
+# webbläsaren, eller genom att lägga in reglerna igen efteråt.
+name: Skyddade filer
+
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened]
+
+permissions: {}
+
+jobs:
+  skydd:
+    name: Skyddade filer
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    permissions:
+      pull-requests: read
+    steps:
+      - name: Kontrollera ändrade filer
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR: ${{ github.event.pull_request.number }}
+          AUTHOR: ${{ github.event.pull_request.user.login }}
+        run: |
+          case "$AUTHOR" in
+            "renovate[bot]" | "dependabot[bot]")
+              echo "Ändringar från $AUTHOR är tillåtna."
+              exit 0
+              ;;
+          esac
+          filer=$(gh api "repos/$REPO/pulls/$PR/files" --paginate \
+            --jq '.[] | .filename, (.previous_filename // empty)')
+          skyddade=$(grep -E '^\.github/(workflows/|actions/|CODEOWNERS$)' \
+            <<<"$filer" || true)
+          if [ -n "$skyddade" ]; then
+            echo "::error::PR:en ändrar skyddade filer:"
+            echo "$skyddade"
+            exit 1
+          fi
+          echo "Inga skyddade filer ändras."
