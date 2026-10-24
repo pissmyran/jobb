@@ -40,7 +40,7 @@ RUN version=$(grep -ho 'BROWSER_VERSION = "[0-9.]*"' node_modules/.pnpm/miniflar
       libglib2.0-0t64 libgtk-3-0t64 libnspr4 libnss3 libpango-1.0-0 libx11-6 libx11-xcb1 libxcb1 \
       libxcomposite1 libxcursor1 libxdamage1 libxext6 libxfixes3 libxi6 libxkbcommon0 \
       libxrandr2 libxrender1 libxss1 libxtst6 unzip && \
-    npx --yes @puppeteer/browsers@3.2.5 install "chrome@$version" --path /opt/cache/.wrangler && \
+    npx --yes @puppeteer/browsers@3.2.6 install "chrome@$version" --path /opt/cache/.wrangler && \
     apt-get purge -y unzip && apt-get autoremove -y && \
     rm -rf /var/lib/apt/lists/* /root/.npm && \
     /opt/cache/.wrangler/chrome/linux-$version/chrome-linux64/chrome --version
