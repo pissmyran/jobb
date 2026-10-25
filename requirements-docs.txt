@@ -2,7 +2,7 @@
 # the build is the same every time; Renovate keeps them on the latest versions.
 # Used by .github/workflows/pages.yml.
 click==8.5.0
-deepmerge==3.0.1
+deepmerge==4.0.0
 jinja2==3.1.6
 markdown==3.11.2
 markupsafe==3.0.4
