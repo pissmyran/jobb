@@ -6,8 +6,8 @@
 [project]
 site_name = "Jobb"
 site_description = "Söker tio passande jobb i månaden och samlar ansökningarna i en fil som kan mejlas."
-repo_url = "https://github.com/VineDrinker/jobb"
-repo_name = "VineDrinker/jobb"
+repo_url = "https://github.com/pissmyran/jobb"
+repo_name = "pissmyran/jobb"
 docs_dir = "site-docs"
 site_dir = "site"
 nav = [
@@ -21,7 +21,7 @@ nav = [
     { "Drift" = "operations.md" },
   ] },
   { "Docker" = "docker.md" },
-  { "Källkod på GitHub" = "https://github.com/VineDrinker/jobb#readme" },
+  { "Källkod på GitHub" = "https://github.com/pissmyran/jobb#readme" },
 ]
 
 [project.theme]
@@ -68,7 +68,7 @@ toggle.name = "Följ systemets inställning"
 
 [[project.extra.social]]
 icon = "fontawesome/brands/github"
-link = "https://github.com/VineDrinker/jobb#readme"
+link = "https://github.com/pissmyran/jobb#readme"
 name = "Källkoden på GitHub"
 
 [project.markdown_extensions]
