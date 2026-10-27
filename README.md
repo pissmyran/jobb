@@ -1,6 +1,6 @@
 # Jobb
 
-**Dokumentation:** [vinedrinker.github.io/jobb](https://vinedrinker.github.io/jobb/) – start, dokumentation och Docker på en sida med sök.
+**Dokumentation:** [pissmyran.github.io/jobb](https://pissmyran.github.io/jobb/) – start, dokumentation och Docker på en sida med sök.
 
 Jobb söker jobb på StudentConsulting åt dig och samlar månadens ansökningar i en textfil. Det körs som en Cloudflare Worker med D1, R2, Browser Rendering och Workflows, eller som en färdig Docker-image.
 
@@ -60,7 +60,7 @@ Taggen `1` ger alla uppdateringar inom version 1; `X.Y` ger bara rättningar och
 
 ## Bidra
 
-Frågor och idéer tas i [Discussions](https://github.com/VineDrinker/.github/discussions), fel och förslag som issues här. Läs [CONTRIBUTING.md](https://github.com/VineDrinker/.github/blob/main/CONTRIBUTING.md) innan du öppnar en pull request. Säkerhetsproblem rapporteras privat via fliken Security.
+Frågor och idéer tas i [Discussions](https://github.com/pissmyran/.github/discussions), fel och förslag som issues här. Läs [CONTRIBUTING.md](https://github.com/pissmyran/.github/blob/main/CONTRIBUTING.md) innan du öppnar en pull request. Säkerhetsproblem rapporteras privat via fliken Security.
 
 ## Licens
 
