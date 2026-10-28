@@ -3,101 +3,62 @@
 inheritance: true
 
 reviews:
+  # Dessa undantag läggs till basens dokumentationsundantag.
   path_filters:
     - "!tools/docs-site.mjs"
+    - "!requirements-docs.txt"
     - "!zensical.toml"
+    - "!.github/workflows/pages.yml"
+    - "!.github/workflows/wiki.yml"
 
   path_instructions:
-    - path: "apps/web/src/{index,auth,access-auth,password-auth,request-security}.ts"
+    - path: "apps/web/**"
       instructions: |
-        Vid ändringar i routes eller autentisering, kontrollera att skyddade
-        API-anrop kräver verifierad identitet och att mutationer behåller
-        same-origin-kontrollen.
-        Access-JWT ska verifieras med signatur, issuer, audience och giltighetstid.
-        Felaktig Access-konfiguration får inte ge åtkomst eller automatiskt
-        växla till lösenordsläge. Lösenordsläge kräver uttryckligt AUTH_MODE.
-        Kontrollera sessionssignatur, utgångstid och cookie-attribut för
-        både HTTPS och avsedd lokal HTTP-drift.
+        Prioritera autentisering, Access-JWT-validering,
+        sessionscookies, same-origin-kontroller och kryptering.
+        Kontrollera att lösenordsläget för egna installationer
+        inte försvagar Access-läget.
+        Kontrollera månadsgränsen på tio verifierade ansökningar,
+        inklusive samtidighet, omförsök och idempotens.
+        Ett osäkert ansökningsresultat ska stoppa nya ansökningar
+        och får inte räknas som lyckat eller misslyckat.
+        D1 är sanningskällan för körningar och ansökningar.
+        R2 lagrar bevis.
+        Kontrollera att loggar och exporter inte läcker hemligheter.
+        Prioritera inkrementellt arbete. Undvik onödiga externa anrop.
+        Granska frontend för funktionsfel och säkerhetsbrister.
 
-    - path: "apps/web/src/{quota,runner,storage,automation-workflow,time}.ts"
+    - path: "packages/studentconsulting/**"
       instructions: |
-        Vid ändringar i ansökningsflödet, kontrollera att en månadsplats
-        reserveras före externt inskick och att samtidiga försök inte kan
-        använda samma plats eller skicka samma ansökan igen.
-        Kontrollera ägarskap när reservationer ändras eller frigörs.
-        Osäkra inskick ska behålla sin kvotplats tills utfallet har klarlagts.
-        De får inte räknas som verifierade eller återförsökas som säkra fel
-        före inskick. Stoppa nya inskick när månadens tio platser är upptagna.
-        Kontrollera att omförsök och återställning efter avbrott bevarar dessa
-        villkor samt tidsfönstren i Europe/Stockholm.
-        Fel vid bevislagring efter verifiering får inte utlösa ett nytt inskick.
-
-    - path: "apps/web/src/{runtime-config,config-keys}.ts"
-      instructions: |
-        Vid ändringar i lagrad konfiguration, kontrollera AES-GCM-kryptering,
-        slumpmässig IV och kompatibilitet för nyckelhärledning och AAD.
-        Ändra inte CONFIG_NAMESPACE utan en plan för befintlig krypterad data.
-        Kontrollera att föregående nyckel kan användas under nyckelrotation
-        och att omkryptering inte skriver över en samtidig konfigurationsändring.
-        Bevara prioriteten mellan driftsättningsvärden och sparade värden.
-        Skilj oläsbar konfiguration från en installation utan sparade värden.
-        Hemliga värden får inte returneras i konfigurationsvyn.
-
-    - path: "packages/studentconsulting/src/**"
-      instructions: |
-        Vid ändringar i navigering eller inskick, kontrollera tillåtna
-        StudentConsulting-adresser och kopplingen till exakt externalId.
-        Inskick kräver aktiverad autoSubmit och entydiga formulärkontroller.
-        Okända obligatoriska frågor får inte besvaras genom gissningar.
-        Markera submissionAttempted innan submit-kontrollen aktiveras.
-        Om ett fel uppstår efter möjlig inskickseffekt ska resultatet vara
-        unknown, inte ett säkert fel före inskick.
-        Verifiera ansökan mot rätt Jobb-ID innan den räknas som inskickad.
-        Behåll skillnaden mellan applied, not_applied och unknown.
-
-    - path: "apps/web/src/providers.ts"
-      instructions: |
-        Vid ändringar i webbläsarens livscykel, kontrollera att start,
-        skapande av sida och provideroperationer har säker städning vid fel.
-        Stäng startade webbläsarsessioner även när operationen misslyckas.
-        Kontrollera att STUDENTCONSULTING_AUTOSUBMIT endast aktiverar
-        automatiska inskick när värdet uttryckligen är true.
+        Prioritera kontouppgifter, verifierade inskick
+        och skydd mot dubbla ansökningar.
+        Tolka inte oklara svar som säkra resultat.
+        Kontrollera att webbläsarsessioner stängs även vid fel.
+        Undvik onödig webbläsartid och upprepade inloggningar.
+        Håll webbläsarlogiken i denna integration.
 
     - path: "migrations/**"
       instructions: |
-        Vid schemaändringar, kontrollera D1/SQLite-kompatibilitet och
-        uppgradering av en databas med befintliga ansökningar.
-        Bevara unika ansökningskopplingar, reservationsägare och månadsgränsen.
-        Kontrollera att backfill tar hänsyn till redan inskickade och
-        osäkra ansökningar så att uppgraderingen inte möjliggör extra inskick.
-        Vid borttagning eller ombyggnad av tabeller, kontrollera faktisk
-        migreringsordning, databevarande och berörda runtime-frågor.
-        Anta inte en separat migreringsfas efter driftsättning utan kodstöd.
+        Kontrollera D1/SQLite-kompatibilitet, dataintegritet
+        och risk för dataförlust.
+        Kontrollera kompatibilitet med den Worker-version
+        som körs under driftsättningen.
+        Tilläggsmigreringar körs före driftsättningen.
+        Borttagande migreringar körs efter driftsättningen.
 
     - path: "docker/**"
       instructions: |
-        Vid ändringar i containerstart eller inställningsimport, kontrollera
-        att /data bevarar databas, bevis, inställningar och krypteringsnyckel.
-        En omstart eller uppgradering får inte ersätta en befintlig nyckel.
-        Kontrollera privata filbehörigheter och att importerade värden
-        behandlas som data, inte som shellkod.
-        Bevara avsedd prioritet för miljövariabler och sparade inställningar.
-        Kontrollera lokal migrering före serverstart och att bundled-läget
-        fungerar utan Cloudflare-konto.
-
-    - path: "Dockerfile"
-      instructions: |
-        Vid ändringar i runtime eller beroenden, kontrollera att wrangler,
-        Miniflare och den installerade Chrome-versionen fungerar tillsammans.
-        Bevara körning som icke-root och skrivåtkomst till /data och nödvändiga
-        cachekataloger. Kontrollera att runtimefiler och migreringar ingår.
-        Kontrollera även påverkan på docker/entrypoint.sh.
+        Prioritera beständig lagring, filbehörigheter,
+        inställningsimport och säker start efter uppgradering.
+        Befintliga krypteringsnycklar och användardata får inte
+        skrivas över eller exponeras i loggar.
+        Nya installationer ska fungera utan åtkomst till
+        någon annans Cloudflare-resurser.
 
     - path: "tools/render.mjs"
       instructions: |
-        Vid ändringar i rendering, kontrollera att deklarerade platshållare
-        i cloudflare.example.env ersätts och att saknade värden ger tydligt fel.
-        Kontrollera att kopiering och substitution inte följer länkar in i
-        hemliga filer eller skriver i källträdet.
-        Utdata får inte rekursivt kopieras till sig själv.
-        Hemliga värden får inte exponeras i loggar eller publicerade artefakter.
+        Kontrollera att platshållare hanteras utan läckta hemligheter.
+        Kontrollera att använda __NAME__-platshållare deklareras
+        i cloudflare.example.env.
+        Kontrollera att saknade värden inte ger en osäkert
+        eller felaktigt renderad driftsättning.
