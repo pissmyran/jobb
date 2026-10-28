@@ -1,73 +1,104 @@
-# CLAUDE.md
+# CLAUDE.md – jobb
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+Vägledning för Claude Code i `pissmyran/jobb`. Tjänsten jobb: en månatlig jobbansökningshjälp på Cloudflare Workers, plus en Docker-bild för egen drift.
 
-## What this repo is
+De gemensamma reglerna för alla repon finns i [STYRNING.md](https://github.com/pissmyran/.github/blob/main/STYRNING.md) i `pissmyran/.github`. Kärnreglerna nedan är en ordagrann kopia. Jämför versionen i markeringen med källan i början av varje session (`curl -sS https://raw.githubusercontent.com/pissmyran/.github/main/STYRNING.md`); är kopian äldre, uppdatera den först i en egen PR (`docs: sync core rules from .github`).
 
-The public source of jobb: a monthly job-application helper on Cloudflare Workers, plus its self-hosted Docker image. It is one of four sibling repos (dumpen, jobb, klarsprak, politiker); shared community files, issue forms and the GitHub settings for all of them live in the `.github` repo (`pissmyran/.github`). The code is generic: it contains no account ids, domains, e-mail addresses, keys or other personal values — only `__NAME__` placeholders. Real values live outside the repo and are filled in at deploy (`tools/render.mjs`) or by the user in `docker-compose.yml`. Read `AGENTS.md`, `README.md` and `docs/` before larger changes.
+## Kärnregler
 
-| Dir | Entry | Handlers | Bindings |
+<!-- kärnregler:start version=2026-10-28 källa=https://github.com/pissmyran/.github/blob/main/STYRNING.md -->
+1. **Inga personliga värden.** Repot är publikt. Skriv aldrig in riktiga id:n, domäner, e-postadresser, namn, nycklar, betallänkar eller kontouppgifter i kod, konfiguration, tester, dokumentation eller commit-meddelanden. Använd platshållare och `example.com`-värden.
+2. **Inga hemligheter.** Tokens, lösenord, sessioner och nycklar hamnar aldrig i Git, loggar, issues eller publik dokumentation. Hemligheter läggs in utanför repot (Cloudflare, GitHub-miljöer, `wrangler secret put`).
+3. **Gren och pull request.** Varje session börjar från senaste `main` (`git fetch origin main`) på en egen gren. `main` ändras bara genom en PR som squash-mergas. Ingen pushar direkt till `main`. En sessions arbete hålls i en PR.
+4. **Testa lokalt före varje push.** Det finns inga testkontroller i CI. Repots egna tester och kontroller (avsnittet Kommandon i repots `CLAUDE.md`) är den enda testgrinden. Pusha aldrig med fallerande tester, och skriv tester för det du ändrar.
+5. **Rör aldrig workflows.** `.github/workflows/`, `.github/actions/` och `CODEOWNERS` ändras inte av Claude, inte ens för att laga ett fel. Ingen kontroll stoppar det längre, men regeln gäller fullt ut. Behövs en ändring: beskriv den i ett issue och låt ägaren göra den. Bara Renovate och Dependabot får uppdatera dem.
+6. **Granskning.** CodeRabbit granskar och CodeQL (GitHubs standardinställning) skannar. Varje granskningstråd måste lösas innan merge. Svara i tråden med vad du ändrade, eller med skälet om fyndet är brus.
+7. **Auto-merge sist.** Slå på auto-merge först när CodeRabbit har granskat den senaste commiten och alla trådar är lösta. Ändrar PR:en bara filer som CodeRabbit hoppar över (`docs/`, `*.md`), räcker det att CodeQL är klar.
+8. **Laga orsaken, inte symptomet.** När något fallerar eller en granskning kräver ändring: läs allt, hitta orsaken och gör om den delen rätt. Små uppenbara fel får rättas direkt. Försvaga aldrig ett test, hoppa aldrig över en kontroll och tysta aldrig en varning.
+9. **Säkerhet först.** Säkerhetslarm (CodeQL, Dependabot, Renovate) går före annat arbete. Länka issuet med `Closes #n`.
+10. **Senaste versionerna.** Lås aldrig verktyg, runtime eller paket till ett versionsnummer; använd `@latest`, `node`, `latest` och versionsintervall. Renovate håller allt aktuellt. Enda undantaget är actions, som låses med commit-SHA och uppdateras av Renovate.
+11. **Commits och titlar.** Sessionen signerar commits själv. Ändra aldrig gits användare, e-post eller signering, och använd aldrig `--no-verify`. PR-titeln blir commiten på `main` och skrivs på engelska enligt Conventional Commits: `typ: beskrivning` eller `typ(område): beskrivning`, med typ feat, fix, docs, refactor, perf, test, build, ci, chore, style eller revert.
+12. **Dokumentation i samma PR.** Ändras beteende, inställningar eller kommandon uppdateras `README.md`, `docs/` och repots `CLAUDE.md` i samma PR.
+13. **Inga lösa grenar.** Radera grenen när PR:en är mergad eller stängd. PR:er från forkar är förslag: gör ändringen själv på en egen gren om den är önskad, och stäng originalet med tack och länk.
+14. **Noll kronor.** Slå aldrig på något som kan kosta pengar.
+15. **GitHub bara via REST.** `gh pr` och `gh issue` fungerar inte i molnsessioner (GraphQL är avstängt). Använd `gh api` och de särskilda `ccr`-vägarna; se avsnittet GitHub från sessionen.
+<!-- kärnregler:slut -->
+
+## Om repot
+
+Ett av fyra syskonrepon (`dumpen`, `jobb`, `klarsprak`, `politiker`) med samma mönster för platshållare, deploy, Docker och dokumentation. Läs `AGENTS.md`, `README.md` och `docs/` före större ändringar.
+
+| Katalog | Ingång | Hanterare | Bindningar |
 |---|---|---|---|
 | `.` | `apps/web/src/index.ts` | fetch, scheduled `0 9 10-13 * *`, Workflow `JobAutomationWorkflow` | D1, R2, Browser Rendering, send_email, Secrets Store `JOBB_CONFIG_KEY` |
 
-## The one rule: no personal values
+## Kommandon
 
-Never write a real id, domain, e-mail address, key, name, donation link or payment detail into code, config, tests, docs or commit messages. Use a placeholder declared in `cloudflare.example.env` (code and config) or `example.com`-style values (docs and tests). Personal assets such as images go in an overlay directory outside the repo. The repo is public.
-
-## Placeholders and deploy
-
-- Every `__NAME__` used in the code must be declared in `cloudflare.example.env`, with an example value and a comment saying where the real value comes from.
-- `node tools/render.mjs <values.env | -> <out-dir> [overlay-dir]` copies the repo, fills in every declared placeholder (failing if a value is missing), copies the overlay on top, drops routes with an empty pattern and links `node_modules`. With `-` the values come from environment variables.
-- Production is deployed by Workers Builds (Cloudflare's GitHub connection) when a PR is merged to `main`, with the values as Cloudflare build variables: build command `node tools/render.mjs - build`, deploy command `npx wrangler deploy --cwd build`. Only `main` builds; other branches deploy nothing.
-- A self-hosted deploy from a private values file works the same way: render, then `npx wrangler deploy --cwd build`, and throw the rendered copy away. Secrets go in with `npx wrangler secret put`, never in the repo.
-- Deploy the new Worker before applying a migration that drops tables or columns.
-- Tests run on the unrendered source, so they see the placeholders.
-- Values that encrypt stored data (jobb's `CONFIG_NAMESPACE`) must never change for an existing database.
-
-## Commands
+Installera, typkontrollera och testa (pnpm enligt `packageManager`):
 
 ```bash
-P="npx --yes $(node -p "require('./package.json').packageManager")"   # pnpm from packageManager
+P="npx --yes $(node -p "require('./package.json').packageManager")"
 $P install && $P typecheck && $P test
 ```
 
-Formatting: Prettier with `.prettierrc.json` (printWidth 100). Run `npx prettier --write <paths>` after editing; CI runs `prettier --check .`. Tests that read source files must not depend on formatting; prefer importing and calling real code over matching source text.
+Kör också, för det du har ändrat: `npx --yes prettier@latest --check .` (inställningar i `.prettierrc.json`, radbredd 100; rätta med `--write`), `shellcheck` på `.sh`-filer och `jq empty` på `.json`-filer. Tester som läser källfiler får inte bero på formatering; anropa hellre den riktiga koden.
 
-## Architecture
+## Arkitektur
 
-- **jobb**: applies for ten suitable jobs a month on StudentConsulting through a Workflow using `@cloudflare/playwright` over Browser Rendering, and collects them in `jobbansokningar_YYYY-MM-DD.txt` (job ID, job type, city, scope), downloadable and e-mailed to one or more recipients. No reporting to Arbetsförmedlingen (there is no API). Production auth is Cloudflare Access (Access JWT); `AUTH_MODE=password` exists only for self-hosting. The D1 runtime configuration row is AES-GCM encrypted with a key derived from `JOBB_CONFIG_KEY` (rotate via `JOBB_CONFIG_KEY_PREVIOUS`).
+- **Flödet:** söker tio lämpliga jobb i månaden på StudentConsulting genom ett Workflow med `@cloudflare/playwright` över Browser Rendering, och samlar dem i `jobbansokningar_ÅÅÅÅ-MM-DD.txt` (jobb-ID, jobbtyp, ort, omfattning) som kan laddas ned och mejlas till en eller flera mottagare. Ingen rapportering till Arbetsförmedlingen (det finns inget API).
+- **Månadsgränsen** är exakt tio verifierade ansökningar. Ett osäkert resultat stoppar och räknas aldrig som lyckat eller misslyckat; skillnaden mellan applied, not_applied och unknown ska bevaras.
+- **Webbläsarlogiken** stannar i `packages/studentconsulting`. Browser Rendering kostar per webbläsartimme, så håll sessionerna korta och stäng dem även vid fel.
+- **D1** är enda sanningen om körningar och ansökningar; R2 innehåller bara bevis.
+- **Inloggning:** i produktion är Cloudflare Access enda inloggningen och Workern verifierar Access-JWT:n själv. `AUTH_MODE=password` finns bara för egen drift.
+- **Konfigurationen** i D1 är krypterad med AES-GCM och en nyckel härledd från `JOBB_CONFIG_KEY` (rotation via `JOBB_CONFIG_KEY_PREVIOUS`). `CONFIG_NAMESPACE` får aldrig ändras för en befintlig databas.
 
-## Cost and logging
+## Platshållare och deploy
 
-Target the Workers Free plan: 10 ms CPU per invocation. No full inventory or rescan on each cron run, request or added item; work incrementally and cache derived data at write time.
+- **Koden är generisk** och innehåller bara platshållare `__NAMN__`. Varje platshållare som används ska deklareras i `cloudflare.example.env` med ett exempelvärde och en kommentar om var det riktiga värdet kommer ifrån.
+- **`node tools/render.mjs <values.env | -> <utkatalog> [overlay]`** kopierar repot, fyller i alla deklarerade platshållare (och stoppar om ett värde saknas), lägger overlay-katalogen ovanpå, tar bort routes med tomt mönster och länkar `node_modules`. Med `-` kommer värdena från miljövariabler.
+- **Produktion** driftsätts av Workers Builds (Cloudflares GitHub-koppling) när en PR mergas till `main`, med värdena som byggvariabler i Cloudflare: bygg med `node tools/render.mjs - build`, driftsätt med `npx wrangler deploy --cwd build`. Bara `main` byggs.
+- **Egen driftsättning** från en privat värdefil fungerar likadant: rendera, kör `npx wrangler deploy --cwd build` och släng den renderade kopian. Hemligheter läggs in med `npx wrangler secret put`.
+- **Migreringar:** driftsätt den nya Workern innan en migrering som tar bort tabeller eller kolumner körs.
+- **Tester** körs på den orenderade källan och ser alltså platshållarna.
 
-Logging, as in the sibling repos: logs at sampling 1 with invocation logs, traces at 0.01, query strings redacted, Workers Issues on. Keep volume down in the code: log errors and warnings, plus at most a line or two per run. Handled errors reach Issues only through `console.error`.
+## Kostnad och loggning
 
-## Documentation site
+- **Gratisplanen:** sikta på Workers Free, 10 ms CPU per anrop. Ingen full inventering eller omskanning per cron-körning, förfrågan eller tillagt objekt; arbeta inkrementellt och spara härledda data när de skrivs.
+- **Loggning:** loggar med sampling 1 och anropsloggar, traces 0,01, frågesträngar maskerade och Workers Issues på. Logga fel och varningar och högst en eller två rader per körning. Hanterade fel når Issues bara genom `console.error`.
 
-`README.md`, `docker/README.md` and `docs/` are also the documentation site on GitHub Pages, built with Zensical (`zensical.toml`, pinned in `requirements-docs.txt`) and published from `main` by `.github/workflows/pages.yml`. The app itself is private (behind Cloudflare Access), so the documentation is only published on GitHub. Build it locally with `node tools/docs-site.mjs && zensical build` (output in `site/`). `tools/docs-site.mjs` makes the README the start page and points links to files outside the site at GitHub. The same pages are mirrored one way into the GitHub wiki by `.github/workflows/wiki.yml` (`node tools/docs-site.mjs --wiki <dir>`), so never edit the wiki. Keep the README's `**Dokumentation:**` line at the top, and add every new page under `docs/` to `nav` in `zensical.toml`; the nav titles are also the wiki page names.
+## Dokumentation
 
-## Docker image
+`README.md`, `docker/README.md` och `docs/` är också dokumentationssajten på GitHub Pages (`pissmyran.github.io/jobb`), byggd med Zensical (`zensical.toml`, `requirements-docs.txt`) och publicerad från `main` av `.github/workflows/pages.yml`. Appen ligger bakom Cloudflare Access, så dokumentationen publiceras bara på GitHub.
 
-- `Dockerfile` (build from the repo root: `docker build -t jobb .`), `docker-compose.yml`, `CHANGELOG.md` and `docker/` (`README.md` is the Docker Hub page, `entrypoint.sh`, `import-settings.sh`, the container wrangler config).
-- The Worker runs in workerd through `wrangler dev --local` with all state under `/data`. The entrypoint renders the source with `tools/render.mjs` from the container environment with zero-setup defaults, and generates missing encryption keys once into `/data`. Images start empty and never read from anyone's Cloudflare resources.
-- Settings come from `docker-compose.yml`, or once from `/data/import.env`: `import-settings.sh` merges it into `/data/settings.env` and deletes it. Non-empty compose variables win.
-- Keep `docker/README.md` in step with `docker-compose.yml` and `CHANGELOG.md`. Versions are semver. To release, bump the version (package.json or version.txt) in the pull request by semver (major for breaking changes, minor for new features, patch for fixes) and add a `## X.Y.Z – YYYY-MM-DD` entry to CHANGELOG.md. When that reaches `main`, `.github/workflows/release.yml` creates the tag and the GitHub release and calls `docker.yml`, which pushes `X.Y.Z`, `X.Y`, `X` and `latest` to Docker Hub. A merge without a version bump releases nothing. If the Docker job fails, "Re-run failed jobs" on the release run retries it; if the release step stopped after the tag was created, run `docker.yml` by hand (workflow_dispatch on the tag).
+- **Bygg lokalt:** `node tools/docs-site.mjs && zensical build` (utdata i `site/`). `tools/docs-site.mjs` gör README till startsida och pekar länkar till filer utanför sajten mot GitHub.
+- **Wikin** speglas envägs av `.github/workflows/wiki.yml`. Redigera aldrig wikin.
+- **README** ska behålla raden `**Dokumentation:**` överst. Nya sidor under `docs/` läggs in i `nav` i `zensical.toml`; titlarna där blir också wikins sidnamn.
 
-## Branches and review
+## Docker och release
 
-The repo is public on GitHub (`pissmyran/jobb`). Agents run as Claude Code cloud sessions. Every change goes through a pull request and its checks; nothing can be merged around them.
+- **Filer:** `Dockerfile` (bygg från roten: `docker build -t jobb .`), `docker-compose.yml`, `CHANGELOG.md` och `docker/` (`README.md` är sidan på Docker Hub, `entrypoint.sh`, `import-settings.sh` och containerns wrangler-konfiguration).
+- **Körning:** Workern körs i workerd via `wrangler dev --local` med allt tillstånd under `/data`. Entrypointen renderar källan med `tools/render.mjs` från containerns miljö med standardvärden som fungerar direkt, och genererar saknade krypteringsnycklar en gång till `/data`. Befintliga nycklar skrivs aldrig över. Bilderna startar tomma och läser aldrig från någons Cloudflare-resurser.
+- **Inställningar** kommer från `docker-compose.yml`, eller en gång från `/data/import.env`, som `import-settings.sh` slår ihop med `/data/settings.env` och sedan raderar. Icke-tomma compose-variabler vinner.
+- **Håll ihop:** `docker/README.md`, `docker-compose.yml` och `CHANGELOG.md` ska stämma med varandra. Dokumentationen ska ange Docker Hub-bilden att använda i compose, inte bygga från repot.
+- **Release:** höj versionen i `package.json` i PR:en enligt semver och lägg till `## X.Y.Z – ÅÅÅÅ-MM-DD` i `CHANGELOG.md`. När PR:en når `main` skapar `release.yml` tagg och release och anropar `docker.yml`, som publicerar `X.Y.Z`, `X.Y`, `X` och `latest` till Docker Hub. En merge utan versionshöjning släpper inget. Fallerar Docker-jobbet kan ägaren köra om det; Claude ändrar inte workflowen.
 
-- Each session works on a branch of its own. `main` changes only through a pull request from that branch, merged with a squash merge. Nobody pushes directly to `main`. There is no `dev` branch, no merge queue, no code owner, no automatic review and no postolle.
-- Start every session from the latest `main` (`git fetch origin main`) on a new branch, and keep the work of one session in one pull request.
-- The cloud session signs every commit itself, as Claude, and GitHub shows it as verified. Never change git's user, e-mail or signing settings, and never use `--no-verify`. Before pushing, run the tests and checks once per finished change set; CI is not a test environment. `Kontroll` runs actionlint on the workflows, shellcheck on every `.sh` file and jq on every `.json` file; run the same locally (`actionlint`, `shellcheck`, `jq empty`).
-- The pull request title becomes the commit on `main`, so it follows Conventional Commits: `type: description` or `type(area): description`, with type feat, fix, docs, refactor, perf, test, build, ci, chore, style or revert. The `PR-titel` check enforces it and sets a label from the type.
-- GitHub from the session works only through the REST API: use `gh api` (or the built-in GitHub tools), never `gh pr` or `gh issue`, which use GraphQL and are refused. Open the PR with `gh api repos/pissmyran/jobb/pulls -f base=main -f head=<branch> -f title='…' -f body='…'` and link the issue it solves (`Closes #123`). Turn on auto-merge with `gh api -X PUT repos/pissmyran/jobb/pulls/<n>/ccr/auto_merge`; the PR is squash-merged once everything passes.
-- REST in short: the open PR from a branch is `gh api 'repos/pissmyran/jobb/pulls?head=pissmyran:<branch>&state=open'`; an issue is `gh api repos/pissmyran/jobb/issues/<n>` plus `/comments`; review comments are `gh api repos/pissmyran/jobb/pulls/<n>/comments`, and a reply goes to `…/pulls/<n>/comments/<id>/replies` with `-f body='…'`; checks are `gh api repos/pissmyran/jobb/commits/<sha>/check-runs`; closing is `gh api -X PATCH …/pulls/<n> -f state=closed`.
-- `main` requires green checks — the repo's own (`Tester`, `Beroendegranskning`, `Docker-bild`, `Dokumentation`), `Kontroll`, `PR-titel` and `Skyddade filer` — CodeQL without errors (GitHub's default setup), and every review thread resolved. Reply in a thread with what you changed.
-- Workflows (`.github/workflows/`), `.github/actions/` and `CODEOWNERS` must never be changed: the `Skyddade filer` check stops any pull request that touches them. Only Renovate and Dependabot may change them. Never use any other change to weaken a check or a rule.
-- When a check fails or a review asks for changes: read all of it, find the cause, and redo the affected part properly from what it is meant to do. Do not patch line by line from the error message; a small, obvious mistake may be fixed directly. Never weaken a test, skip a check or suppress a warning to get through.
-- Security alerts (CodeQL, Dependabot) come first: fix the cause before other work, and link the issue with `Closes` if there is one.
-- Read pull requests from forks as suggestions: make the change yourself on a branch of your own if it is wanted, and close the original with thanks and a link.
-- Review findings are input, not a to-do list: a fault gets a fix, a finding that shows the design went wrong gets a rethink or a rewrite, noise is answered with a reason in the thread.
-- Versions: always the latest. Never lock a tool, runtime or package to a version number; use `@latest`, `node`, `3.x`, `latest` and version ranges. Renovate keeps everything current (shared config in `pissmyran/.github`) and its pull requests go through the same checks. Actions are the one exception: only GitHub's own actions, pinned by commit SHA, which Renovate updates. Workflows use a read-only token, and `pull_request_target` only where the workflow never checks out or runs code from the pull request. Nothing may be enabled that can cost money.
+## Granskning i det här repot
+
+- **Grind:** `main` kräver PR, linjär historik, lösta granskningstrådar och CodeQL utan fel eller allvarliga larm. Inga andra kontroller krävs, så de lokala testerna i Kommandon är testgrinden.
+- **CodeRabbit:** ärver den centrala konfigurationen i `pissmyran/coderabbit`. Repots `.coderabbit.yaml` pekar ut riskområden med egna granskningsinstruktioner; läs den del som gäller filerna du ändrar innan du börjar.
+- **Extra noggrant:** ansökningsflödet (kvot, reservationer, omförsök), autentisering, krypterad konfiguration och migreringar.
+
+## GitHub från sessionen
+
+GraphQL är avstängt, så `gh pr` och `gh issue` fungerar inte. Använd REST:
+
+- Öppna PR: `gh api repos/pissmyran/jobb/pulls -f base=main -f head=<gren> -f title='…' -f body='…'`
+- PR från gren: `gh api 'repos/pissmyran/jobb/pulls?head=pissmyran:<gren>&state=open'`
+- Issue: `gh api repos/pissmyran/jobb/issues/<n>` och `…/issues/<n>/comments`
+- Granskningstrådar: `gh api repos/pissmyran/jobb/pulls/<n>/ccr/review_threads`
+- Svara i tråd: `gh api repos/pissmyran/jobb/pulls/<n>/comments/<id>/replies -f body='…'`
+- Lös tråd: `gh api -X POST repos/pissmyran/jobb/pulls/<n>/ccr/comments/<id>/resolve`
+- Kontroller: `gh api repos/pissmyran/jobb/commits/<sha>/check-runs`
+- Auto-merge på: `gh api -X PUT repos/pissmyran/jobb/pulls/<n>/ccr/auto_merge`
+- Stäng PR: `gh api -X PATCH repos/pissmyran/jobb/pulls/<n> -f state=closed`
+- Radera gren: `gh api -X DELETE repos/pissmyran/jobb/git/refs/heads/<gren>`
