@@ -1,0 +1,64 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+
+inheritance: true
+
+reviews:
+  # Dessa undantag läggs till basens dokumentationsundantag.
+  path_filters:
+    - "!tools/docs-site.mjs"
+    - "!requirements-docs.txt"
+    - "!zensical.toml"
+    - "!.github/workflows/pages.yml"
+    - "!.github/workflows/wiki.yml"
+
+  path_instructions:
+    - path: "apps/web/**"
+      instructions: |
+        Prioritera autentisering, Access-JWT-validering,
+        sessionscookies, same-origin-kontroller och kryptering.
+        Kontrollera att lösenordsläget för egna installationer
+        inte försvagar Access-läget.
+        Kontrollera månadsgränsen på tio verifierade ansökningar,
+        inklusive samtidighet, omförsök och idempotens.
+        Ett osäkert ansökningsresultat ska stoppa nya ansökningar
+        och får inte räknas som lyckat eller misslyckat.
+        D1 är sanningskällan för körningar och ansökningar.
+        R2 lagrar bevis.
+        Kontrollera att loggar och exporter inte läcker hemligheter.
+        Prioritera inkrementellt arbete. Undvik onödiga externa anrop.
+        Granska frontend för funktionsfel och säkerhetsbrister.
+
+    - path: "packages/studentconsulting/**"
+      instructions: |
+        Prioritera kontouppgifter, verifierade inskick
+        och skydd mot dubbla ansökningar.
+        Tolka inte oklara svar som säkra resultat.
+        Kontrollera att webbläsarsessioner stängs även vid fel.
+        Undvik onödig webbläsartid och upprepade inloggningar.
+        Håll webbläsarlogiken i denna integration.
+
+    - path: "migrations/**"
+      instructions: |
+        Kontrollera D1/SQLite-kompatibilitet, dataintegritet
+        och risk för dataförlust.
+        Kontrollera kompatibilitet med den Worker-version
+        som körs under driftsättningen.
+        Tilläggsmigreringar körs före driftsättningen.
+        Borttagande migreringar körs efter driftsättningen.
+
+    - path: "docker/**"
+      instructions: |
+        Prioritera beständig lagring, filbehörigheter,
+        inställningsimport och säker start efter uppgradering.
+        Befintliga krypteringsnycklar och användardata får inte
+        skrivas över eller exponeras i loggar.
+        Nya installationer ska fungera utan åtkomst till
+        någon annans Cloudflare-resurser.
+
+    - path: "tools/render.mjs"
+      instructions: |
+        Kontrollera att platshållare hanteras utan läckta hemligheter.
+        Kontrollera att använda __NAME__-platshållare deklareras
+        i cloudflare.example.env.
+        Kontrollera att saknade värden inte ger en osäkert
+        eller felaktigt renderad driftsättning.
