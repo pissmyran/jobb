@@ -12,8 +12,8 @@ De gemensamma reglerna för alla repon finns i [STYRNING.md](https://github.com/
 3. **Gren och pull request.** Varje session börjar från senaste `main` (`git fetch origin main`) på en egen gren. `main` ändras bara genom en PR som squash-mergas. Ingen pushar direkt till `main`. En sessions arbete hålls i en PR.
 4. **Testa lokalt före varje push.** Det finns inga testkontroller i CI. Repots egna tester och kontroller (avsnittet Kommandon i repots `CLAUDE.md`) är den enda testgrinden. Pusha aldrig med fallerande tester, och skriv tester för det du ändrar.
 5. **Rör aldrig workflows.** `.github/workflows/`, `.github/actions/` och `CODEOWNERS` ändras inte av Claude, inte ens för att laga ett fel. Ingen kontroll stoppar det längre, men regeln gäller fullt ut. Behövs en ändring: beskriv den i ett issue och låt ägaren göra den. Bara Renovate och Dependabot får uppdatera dem.
-6. **Granskning.** CodeRabbit granskar och CodeQL (GitHubs standardinställning) skannar. Varje granskningstråd måste lösas innan merge. Svara i tråden med vad du ändrade, eller med skälet om fyndet är brus.
-7. **Auto-merge sist.** Slå på auto-merge först när CodeRabbit har granskat den senaste commiten och alla trådar är lösta. Ändrar PR:en bara filer som CodeRabbit hoppar över (`docs/`, `*.md`), räcker det att CodeQL är klar.
+6. **Granskning.** CodeRabbit och Sourcery granskar och CodeQL (GitHubs standardinställning) skannar. Varje granskningstråd måste lösas innan merge. Svara i tråden med vad du ändrade, eller med skälet om fyndet är brus.
+7. **Auto-merge sist.** Slå på auto-merge först när CodeRabbit och Sourcery har granskat den senaste commiten och alla trådar är lösta. Ändrar PR:en bara filer som CodeRabbit hoppar över (`docs/`, `*.md`), räcker det att CodeQL är klar.
 8. **Laga orsaken, inte symptomet.** När något fallerar eller en granskning kräver ändring: läs allt, hitta orsaken och gör om den delen rätt. Små uppenbara fel får rättas direkt. Försvaga aldrig ett test, hoppa aldrig över en kontroll och tysta aldrig en varning.
 9. **Säkerhet först.** Säkerhetslarm (CodeQL, Dependabot, Renovate) går före annat arbete. Länka issuet med `Closes #n`.
 10. **Senaste versionerna.** Lås aldrig verktyg, runtime eller paket till ett versionsnummer; använd `@latest`, `node`, `latest` och versionsintervall. Renovate håller allt aktuellt. Enda undantaget är actions, som låses med commit-SHA och uppdateras av Renovate.
@@ -86,6 +86,7 @@ Kör också, för det du har ändrat: `npx --yes prettier@latest --check .` (ins
 
 - **Grind:** `main` kräver PR, linjär historik, lösta granskningstrådar och CodeQL utan fel eller allvarliga larm. Inga andra kontroller krävs, så de lokala testerna i Kommandon är testgrinden.
 - **CodeRabbit:** ärver den centrala konfigurationen i `pissmyran/coderabbit`. Repots `.coderabbit.yaml` pekar ut riskområden med egna granskningsinstruktioner; läs den del som gäller filerna du ändrar innan du börjar.
+- **Sourcery:** granskar också, som GitHub-app utan egen konfiguration här. Behandla dess trådar som CodeRabbits.
 - **Extra noggrant:** ansökningsflödet (kvot, reservationer, omförsök), autentisering, krypterad konfiguration och migreringar.
 
 ## GitHub från sessionen
