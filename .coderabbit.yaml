@@ -10,94 +10,94 @@ reviews:
   path_instructions:
     - path: "apps/web/src/{index,auth,access-auth,password-auth,request-security}.ts"
       instructions: |
-        Vid ändringar i routes eller autentisering, kontrollera att skyddade
-        API-anrop kräver verifierad identitet och att mutationer behåller
-        same-origin-kontrollen.
-        Access-JWT ska verifieras med signatur, issuer, audience och giltighetstid.
-        Felaktig Access-konfiguration får inte ge åtkomst eller automatiskt
-        växla till lösenordsläge. Lösenordsläge kräver uttryckligt AUTH_MODE.
-        Kontrollera sessionssignatur, utgångstid och cookie-attribut för
-        både HTTPS och avsedd lokal HTTP-drift.
+        When routes or authentication change, check that protected
+        API calls require a verified identity and that mutations keep
+        the same-origin check.
+        Access JWTs must be verified for signature, issuer, audience and expiry.
+        A broken Access configuration must never grant access or silently
+        fall back to password mode. Password mode requires an explicit AUTH_MODE.
+        Check session signature, expiry and cookie attributes for
+        both HTTPS and the intended local HTTP setup.
 
     - path: "apps/web/src/{quota,runner,storage,automation-workflow,time}.ts"
       instructions: |
-        Vid ändringar i ansökningsflödet, kontrollera att en månadsplats
-        reserveras före externt inskick och att samtidiga försök inte kan
-        använda samma plats eller skicka samma ansökan igen.
-        Kontrollera ägarskap när reservationer ändras eller frigörs.
-        Osäkra inskick ska behålla sin kvotplats tills utfallet har klarlagts.
-        De får inte räknas som verifierade eller återförsökas som säkra fel
-        före inskick. Stoppa nya inskick när månadens tio platser är upptagna.
-        Kontrollera att omförsök och återställning efter avbrott bevarar dessa
-        villkor samt tidsfönstren i Europe/Stockholm.
-        Fel vid bevislagring efter verifiering får inte utlösa ett nytt inskick.
+        When the application flow changes, check that a monthly slot
+        is reserved before the external submission and that concurrent attempts
+        cannot use the same slot or submit the same application again.
+        Check ownership when reservations are changed or released.
+        Uncertain submissions must keep their quota slot until the outcome is known.
+        They must not count as verified or be retried as safe failures
+        before submission. Stop new submissions once the month's ten slots are taken.
+        Check that retries and recovery after interruption keep these
+        conditions and the time windows in Europe/Stockholm.
+        Failing to store evidence after verification must not trigger a new submission.
 
     - path: "apps/web/src/{runtime-config,config-keys}.ts"
       instructions: |
-        Vid ändringar i lagrad konfiguration, kontrollera AES-GCM-kryptering,
-        slumpmässig IV och kompatibilitet för nyckelhärledning och AAD.
-        Ändra inte CONFIG_NAMESPACE utan en plan för befintlig krypterad data.
-        Kontrollera att föregående nyckel kan användas under nyckelrotation
-        och att omkryptering inte skriver över en samtidig konfigurationsändring.
-        Bevara prioriteten mellan driftsättningsvärden och sparade värden.
-        Skilj oläsbar konfiguration från en installation utan sparade värden.
-        Hemliga värden får inte returneras i konfigurationsvyn.
+        When stored configuration changes, check AES-GCM encryption,
+        a random IV and compatibility of key derivation and AAD.
+        Never change CONFIG_NAMESPACE without a plan for existing encrypted data.
+        Check that the previous key still works during key rotation
+        and that re-encryption does not overwrite a concurrent configuration change.
+        Keep the precedence between deployment values and saved values.
+        Separate unreadable configuration from an installation with no saved values.
+        Secret values must never be returned in the configuration view.
 
     - path: "packages/studentconsulting/src/**"
       instructions: |
-        Vid ändringar i navigering eller inskick, kontrollera tillåtna
-        StudentConsulting-adresser och kopplingen till exakt externalId.
-        Inskick kräver aktiverad autoSubmit och entydiga formulärkontroller.
-        Okända obligatoriska frågor får inte besvaras genom gissningar.
-        Markera submissionAttempted innan submit-kontrollen aktiveras.
-        Om ett fel uppstår efter möjlig inskickseffekt ska resultatet vara
-        unknown, inte ett säkert fel före inskick.
-        Verifiera ansökan mot rätt Jobb-ID innan den räknas som inskickad.
-        Behåll skillnaden mellan applied, not_applied och unknown.
+        When navigation or submission changes, check the allowed
+        StudentConsulting addresses and the link to the exact externalId.
+        Submission requires autoSubmit to be enabled and unambiguous form controls.
+        Unknown required questions must never be answered by guessing.
+        Set submissionAttempted before the submit control is activated.
+        If an error happens after a possible submission effect, the result must be
+        unknown, not a safe pre-submission failure.
+        Verify the application against the right job ID before counting it as submitted.
+        Keep the distinction between applied, not_applied and unknown.
 
     - path: "apps/web/src/providers.ts"
       instructions: |
-        Vid ändringar i webbläsarens livscykel, kontrollera att start,
-        skapande av sida och provideroperationer har säker städning vid fel.
-        Stäng startade webbläsarsessioner även när operationen misslyckas.
-        Kontrollera att STUDENTCONSULTING_AUTOSUBMIT endast aktiverar
-        automatiska inskick när värdet uttryckligen är true.
+        When the browser lifecycle changes, check that launch,
+        page creation and provider operations clean up safely on failure.
+        Close started browser sessions even when the operation fails.
+        Check that STUDENTCONSULTING_AUTOSUBMIT only enables
+        automatic submission when the value is explicitly true.
 
     - path: "migrations/**"
       instructions: |
-        Vid schemaändringar, kontrollera D1/SQLite-kompatibilitet och
-        uppgradering av en databas med befintliga ansökningar.
-        Bevara unika ansökningskopplingar, reservationsägare och månadsgränsen.
-        Kontrollera att backfill tar hänsyn till redan inskickade och
-        osäkra ansökningar så att uppgraderingen inte möjliggör extra inskick.
-        Vid borttagning eller ombyggnad av tabeller, kontrollera faktisk
-        migreringsordning, databevarande och berörda runtime-frågor.
-        Anta inte en separat migreringsfas efter driftsättning utan kodstöd.
+        On schema changes, check D1/SQLite compatibility and
+        upgrading a database that already has applications.
+        Keep unique application links, reservation owners and the monthly limit.
+        Check that backfills account for already submitted and
+        uncertain applications so the upgrade never allows extra submissions.
+        When tables are dropped or rebuilt, check the actual
+        migration order, data preservation and affected runtime queries.
+        Do not assume a separate migration phase after deployment without code support.
 
     - path: "docker/**"
       instructions: |
-        Vid ändringar i containerstart eller inställningsimport, kontrollera
-        att /data bevarar databas, bevis, inställningar och krypteringsnyckel.
-        En omstart eller uppgradering får inte ersätta en befintlig nyckel.
-        Kontrollera privata filbehörigheter och att importerade värden
-        behandlas som data, inte som shellkod.
-        Bevara avsedd prioritet för miljövariabler och sparade inställningar.
-        Kontrollera lokal migrering före serverstart och att bundled-läget
-        fungerar utan Cloudflare-konto.
+        When container start or settings import changes, check
+        that /data keeps the database, evidence, settings and encryption key.
+        A restart or upgrade must never replace an existing key.
+        Check private file permissions and that imported values
+        are treated as data, not as shell code.
+        Keep the intended precedence of environment variables and saved settings.
+        Check the local migration before server start and that bundled mode
+        works without a Cloudflare account.
 
     - path: "Dockerfile"
       instructions: |
-        Vid ändringar i runtime eller beroenden, kontrollera att wrangler,
-        Miniflare och den installerade Chrome-versionen fungerar tillsammans.
-        Bevara körning som icke-root och skrivåtkomst till /data och nödvändiga
-        cachekataloger. Kontrollera att runtimefiler och migreringar ingår.
-        Kontrollera även påverkan på docker/entrypoint.sh.
+        When the runtime or dependencies change, check that wrangler,
+        Miniflare and the installed Chrome version work together.
+        Keep running as non-root and write access to /data and the required
+        cache directories. Check that runtime files and migrations are included.
+        Also check the effect on docker/entrypoint.sh.
 
     - path: "tools/render.mjs"
       instructions: |
-        Vid ändringar i rendering, kontrollera att deklarerade platshållare
-        i cloudflare.example.env ersätts och att saknade värden ger tydligt fel.
-        Kontrollera att kopiering och substitution inte följer länkar in i
-        hemliga filer eller skriver i källträdet.
-        Utdata får inte rekursivt kopieras till sig själv.
-        Hemliga värden får inte exponeras i loggar eller publicerade artefakter.
+        When rendering changes, check that the placeholders declared
+        in cloudflare.example.env are replaced and that missing values fail clearly.
+        Check that copying and substitution never follow links into
+        secret files or write into the source tree.
+        The output must never be copied recursively into itself.
+        Secret values must never be exposed in logs or published artifacts.
