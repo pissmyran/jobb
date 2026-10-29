@@ -91,6 +91,12 @@ Kör också, för det du har ändrat: `npx --yes prettier@latest --check .` (ins
 - **Sourcery och Codex:** granskar också, som GitHub-appar utan egen konfiguration här, och de granskar även dokumentation. Behandla deras trådar som CodeRabbits.
 - **Extra noggrant:** ansökningsflödet (kvot, reservationer, omförsök), autentisering, krypterad konfiguration och migreringar.
 
+## Token optimizer
+
+- **What it is:** the platform-skills token optimizer runs in audit mode. `.token-optimizer.yaml` holds the settings, `.token-optimizer/optimize.sh` is the hook script and `.claude/agents/platform-bulk-reader.md` is the cheap reader agent.
+- **What it does:** a `PreToolUse` hook in `.claude/settings.json` logs oversized reads to `.token-optimizer/decisions.log` (git-ignored). It never blocks a read.
+- **Changing it:** switch `mode` to `redirect` only after `.token-optimizer/probe/run-probe.sh` has verified delegation. Set `enabled: false` to turn it off.
+
 ## GitHub från sessionen
 
 GraphQL är avstängt, så `gh pr` och `gh issue` fungerar inte. Använd REST:
