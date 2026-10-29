@@ -1,20 +1,34 @@
-# AGENTS.md
+# AGENTS.md – jobb
 
-## Läs först
+En månatlig jobbansökningshjälp på Cloudflare Workers, plus en Docker-bild för egen drift.
 
-1. [CLAUDE.md](CLAUDE.md): gemensamma regler för arbetssätt, deploy, loggning, kostnader och Docker. Arbetet sker på en egen gren per session; `main` ändras bara genom en PR från den grenen med squash merge.
-2. [docs/oversikt.md](docs/oversikt.md): karta över dokumentationen.
-3. [docs/architecture.md](docs/architecture.md): bindningar, state och säkerhet.
-4. [docs/automation.md](docs/automation.md) och [docs/providers.md](docs/providers.md): körningarna och StudentConsulting.
-5. [docs/authentication.md](docs/authentication.md) och [docs/operations.md](docs/operations.md): inloggning, nycklar och drift.
+Läs de gemensamma reglerna i början av varje session: [GOVERNANCE.md](https://raw.githubusercontent.com/pissmyran/.github/main/GOVERNANCE.md) och [SERVICES.md](https://raw.githubusercontent.com/pissmyran/.github/main/SERVICES.md). Läs `README.md` före större ändringar.
 
-## Regler som alltid gäller
+## Läs vid behov
 
-- Månadsgränsen är exakt tio verifierade ansökningar. Ett osäkert resultat från StudentConsulting stoppar, det räknas aldrig som lyckat eller misslyckat.
-- I produktion är Cloudflare Access den enda inloggningen, och Workern kontrollerar Access-JWT:n själv. `AUTH_MODE=password` finns bara för egna installationer.
-- Webbläsarlogiken stannar i `packages/studentconsulting` och sprids inte in i resten av koden. Browser Rendering kostar per webbläsartimme.
-- D1 är den enda sanningen om körningar och ansökningar; R2 innehåller bara bevis.
-- Kör `pnpm typecheck` och `pnpm test` före push. En migrering som lägger till körs före deployen, en som tar bort efter.
-- Ändra inte behörigheter eller driftsättningen för att få en kontroll att gå igenom.
-- Inga personliga värden i koden, bara platshållare (`__NAMN__`) som deklareras i `cloudflare.example.env`. Uppdatera `CHANGELOG.md` och versionen i `package.json` vid varje ny image.
-- Hemligheter, kontouppgifter, sessioner och bevis hamnar aldrig i Git, loggar eller publik dokumentation.
+- [docs/oversikt.md](docs/oversikt.md): karta över dokumentationen.
+- [docs/architecture.md](docs/architecture.md): bindningar, state och säkerhet.
+- [docs/automation.md](docs/automation.md) och [docs/providers.md](docs/providers.md): körningarna och StudentConsulting.
+- [docs/authentication.md](docs/authentication.md) och [docs/operations.md](docs/operations.md): inloggning, nycklar och drift.
+
+## Kommandon
+
+Installera, typkontrollera och testa (pnpm enligt `packageManager`):
+
+```bash
+P="npx --yes $(node -p "require('./package.json').packageManager")"
+$P install && $P typecheck && $P test
+```
+
+## Regler
+
+- **Ingång:** `apps/web/src/index.ts`. Hanterare: fetch, scheduled `0 9 10-13 * *`, Workflow `JobAutomationWorkflow`. Bindningar: D1, R2, Browser Rendering, send_email, Secrets Store `JOBB_CONFIG_KEY`.
+- **Flödet:** tio lämpliga jobb i månaden söks på StudentConsulting av ett Workflow med `@cloudflare/playwright` över Browser Rendering och samlas i `jobbansokningar_ÅÅÅÅ-MM-DD.txt` (jobb-ID, jobbtyp, ort, omfattning) som kan laddas ned och mejlas. Ingen rapportering till Arbetsförmedlingen.
+- **Månadsgränsen** är exakt tio verifierade ansökningar. Ett osäkert resultat stoppar och räknas aldrig som lyckat eller misslyckat; skillnaden mellan applied, not_applied och unknown bevaras.
+- **Webbläsarlogiken** stannar i `packages/studentconsulting`. Browser Rendering kostar per webbläsartimme: håll sessionerna korta och stäng dem även vid fel.
+- **D1** är enda sanningen om körningar och ansökningar; R2 innehåller bara bevis.
+- **Inloggning:** i produktion är Cloudflare Access enda inloggningen och Workern verifierar Access-JWT:n själv. `AUTH_MODE=password` finns bara för egen drift.
+- **Konfigurationen** i D1 är krypterad med AES-GCM med en nyckel härledd från `JOBB_CONFIG_KEY` (rotation via `JOBB_CONFIG_KEY_PREVIOUS`). `CONFIG_NAMESPACE` ändras aldrig för en befintlig databas.
+- **Migreringar:** en som lägger till körs före deployen.
+- **Release:** versionen finns i `package.json`.
+- **Extra noggrant:** ansökningsflödet (kvot, reservationer, omförsök), autentisering, krypterad konfiguration och migreringar.
