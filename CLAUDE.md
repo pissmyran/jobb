@@ -73,6 +73,8 @@ Kör också, för det du har ändrat: `npx --yes prettier@latest --check .` (ins
 - **Bygg lokalt:** installera Zensical med `pip install -r requirements-docs.txt` (gärna i en virtuell miljö), kör sedan `node tools/docs-site.mjs && zensical build` (utdata i `site/`). `tools/docs-site.mjs` gör README till startsida och pekar länkar till filer utanför sajten mot GitHub.
 - **Wikin** speglas envägs av `.github/workflows/wiki.yml`. Redigera aldrig wikin.
 - **README** ska behålla raden `**Dokumentation:**` överst. Nya sidor under `docs/` läggs in i `nav` i `zensical.toml`; titlarna där blir också wikins sidnamn.
+- **Engelsk spegling:** `docs/eng/` är en engelsk översättning av dokumentationen: `README.md` blir `docs/eng/index.md`, `docker/README.md` blir `docs/eng/docker.md` och övriga sidor behåller sina filnamn. Ändras en svensk sida uppdateras den engelska i samma PR, och en ny sida läggs in i både det svenska och det engelska avsnittet i `nav`. Språkväljaren i sidhuvudet styrs av `extra.alternate` i `zensical.toml`.
+- **Språk:** dokumentationen är svensk i första hand. Allt annat skrivs på engelska: kod, kommentarer, PR-titlar och beskrivningar, commit-meddelanden, granskningssvar och etiketter.
 
 ## Docker och release
 

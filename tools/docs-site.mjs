@@ -7,6 +7,8 @@
 //
 // README.md becomes the start page and docker/README.md the Docker page; docs/
 // is included as it is, except docs/agents/, which is written for coding agents.
+// docs/eng/ is the English mirror: eng/index.md mirrors README.md, eng/docker.md
+// mirrors docker/README.md and the other pages keep the Swedish file names.
 // Links between those files are rewritten to the pages they become, and links
 // to anything else in the repo point to the file on GitHub, so every link works
 // on the site and in the wiki. The repo address is repo_url in zensical.toml,
@@ -82,8 +84,11 @@ const walk = (dir) => {
 };
 if (existsSync("docs")) walk("docs");
 
-// Wiki page names are flat: the nav title with spaces as hyphens.
+// Wiki page names are flat: the nav title with spaces as hyphens. The English
+// mirror in docs/eng/ gets an "English-" prefix so its pages never collide with
+// the Swedish ones (both have a Home and a Docker page, for example).
 const wikiName = (page) =>
+  (page.startsWith("eng/") ? "English-" : "") +
   (titles.get(page) ?? posix.basename(page, ".md")).replace(/[\s/]+/g, "-");
 const onWiki = (page) => page.endsWith(".md");
 
@@ -128,7 +133,10 @@ for (const [src, dst] of pages) {
 if (wiki) {
   const menu = [...titles.keys()]
     .filter((page) => [...pages.values()].includes(page))
-    .map((page) => `- [${page === "index.md" ? "Start" : titles.get(page)}](${wikiName(page)})`);
+    .map((page) => {
+      const title = page === "index.md" ? "Start" : titles.get(page);
+      return `- [${page.startsWith("eng/") ? `English: ${title}` : title}](${wikiName(page)})`;
+    });
   writeFileSync(
     posix.join(out, "_Sidebar.md"),
     [...menu, `- [Källkod på GitHub](${repoUrl}#readme)`, ""].join("\n"),
