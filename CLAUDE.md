@@ -167,3 +167,26 @@ Lista larm från hemlighetsskanning:
 ```sh
 gh api repos/pissmyran/jobb/secret-scanning/alerts
 ```
+## Token optimizer
+
+- **What it is:** the platform-skills token optimizer runs in audit mode. `.token-optimizer.yaml` holds the settings, `.token-optimizer/optimize.sh` is the hook script and `.claude/agents/platform-bulk-reader.md` is the cheap reader agent.
+- **What it does:** a `PreToolUse` hook in `.claude/settings.json` logs oversized reads, and shell calls it cannot classify, to `.token-optimizer/decisions.log` (git-ignored). The log never holds command text. The hook never blocks a read.
+- **Requirements:** `jq` and mikefarah `yq` v4 (the Python `yq` does not work). Create the git-ignored state directory once with `mkdir -p .token-optimizer/state`.
+- **Local changes:** `optimize.sh` differs from the skill's original in two places: it never writes command text to the log, and it replaces control characters and caps field length in `log_line`. The hook command starts from `$CLAUDE_PROJECT_DIR`. Reapply these if the script is updated from the skill.
+- **Changing it:** switch `mode` to `redirect` only after `.token-optimizer/probe/run-probe.sh` has verified delegation. Set `enabled: false` to turn it off.
+
+## GitHub från sessionen
+
+GraphQL är avstängt, så `gh pr` och `gh issue` fungerar inte. Använd REST:
+
+- Öppna PR: `gh api repos/pissmyran/jobb/pulls -f base=main -f head=<gren> -f title='…' -f body='…'`
+- PR från gren: `gh api 'repos/pissmyran/jobb/pulls?head=pissmyran:<gren>&state=open'`
+- Issue: `gh api repos/pissmyran/jobb/issues/<n>` och `…/issues/<n>/comments`
+- Granskningstrådar: `gh api repos/pissmyran/jobb/pulls/<n>/ccr/review_threads`
+- Svara i tråd: `gh api repos/pissmyran/jobb/pulls/<n>/comments/<id>/replies -f body='…'`
+- Lös tråd: `gh api -X POST repos/pissmyran/jobb/pulls/<n>/ccr/comments/<id>/resolve`
+- Kontroller: `gh api repos/pissmyran/jobb/commits/<sha>/check-runs`
+- Auto-merge på: `gh api -X PUT repos/pissmyran/jobb/pulls/<n>/ccr/auto_merge -f merge_method=squash`
+- Är PR:en redan klar att mergas (auto-merge vägras då), squash-merga direkt: `gh api -X PUT repos/pissmyran/jobb/pulls/<n>/merge -f merge_method=squash`
+- Stäng PR: `gh api -X PATCH repos/pissmyran/jobb/pulls/<n> -f state=closed`
+- Radera gren: GitHub raderar grenen vid merge. En stängd PR:s gren raderas med `git push origin --delete <gren>` (API-vägen är spärrad).
