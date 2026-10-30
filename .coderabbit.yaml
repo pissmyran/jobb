@@ -1,8 +1,11 @@
 # yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
 
+# Inherit shared settings from pissmyran/coderabbit.
+# Keep only repository-specific overrides here.
 inheritance: true
 
 reviews:
+  # Preserve the repository's existing exclusions.
   path_filters:
     - "!tools/docs-site.mjs"
     - "!zensical.toml"
@@ -10,94 +13,148 @@ reviews:
   path_instructions:
     - path: "apps/web/src/{index,auth,access-auth,password-auth,request-security}.ts"
       instructions: |
-        When routes or authentication change, check that protected
-        API calls require a verified identity and that mutations keep
-        the same-origin check.
-        Access JWTs must be verified for signature, issuer, audience and expiry.
-        A broken Access configuration must never grant access or silently
-        fall back to password mode. Password mode requires an explicit AUTH_MODE.
-        Check session signature, expiry and cookie attributes for
-        both HTTPS and the intended local HTTP setup.
+        When routes or authentication change, check that all protected routes
+        require a verified identity. Health and readiness are public exceptions.
+        Mutations must enforce the same-origin check.
+        Verify Access JWT signature, issuer, audience, expiry and not-before.
+        Invalid Access configuration must fail closed, never fall back to
+        password authentication. Password mode requires explicit AUTH_MODE.
+        Check session signatures, expiry, password-change invalidation and
+        cookie attributes for HTTPS and the intended local HTTP setup.
+        Keep credentials and tokens out of responses and logs.
 
-    - path: "apps/web/src/{quota,runner,storage,automation-workflow,time}.ts"
+    - path: "apps/web/src/{quota,runner,storage,automation-workflow,time,policy}.ts"
       instructions: |
-        When the application flow changes, check that a monthly slot
-        is reserved before the external submission and that concurrent attempts
-        cannot use the same slot or submit the same application again.
-        Check ownership when reservations are changed or released.
-        Uncertain submissions must keep their quota slot until the outcome is known.
-        They must not count as verified or be retried as safe failures
-        before submission. Stop new submissions once the month's ten slots are taken.
-        Check that retries and recovery after interruption keep these
-        conditions and the time windows in Europe/Stockholm.
-        Failing to store evidence after verification must not trigger a new submission.
+        When application processing changes, check that D1 reserves a monthly
+        slot before external submission. Concurrent attempts must not reuse
+        a slot or submit the same application twice.
+        Check reservation ownership before changing or releasing a slot.
+        Submitted and uncertain attempts retain their slots.
+        Unknown outcomes must not count as verified or become safe retries.
+        Stop new submissions when all ten monthly slots are occupied.
+        Preserve Europe/Stockholm month boundaries and execution windows:
+        manual runs on days 1-14 and scheduled runs on days 10-13.
+        Check workflow retries, cancellation and interrupted-run recovery.
+        Failure to save evidence after verification must not resubmit a job.
 
-    - path: "apps/web/src/{runtime-config,config-keys}.ts"
+    - path: "apps/web/src/{runtime-config,config-keys,runtime-migration}.ts"
       instructions: |
-        When stored configuration changes, check AES-GCM encryption,
-        a random IV and compatibility of key derivation and AAD.
-        Never change CONFIG_NAMESPACE without a plan for existing encrypted data.
-        Check that the previous key still works during key rotation
-        and that re-encryption does not overwrite a concurrent configuration change.
-        Keep the precedence between deployment values and saved values.
-        Separate unreadable configuration from an installation with no saved values.
-        Secret values must never be returned in the configuration view.
+        When stored configuration changes, check AES-GCM encryption, fresh IVs,
+        HKDF key derivation and compatibility of authenticated data.
+        Do not change CONFIG_NAMESPACE without migrating existing ciphertext.
+        Preserve previous-key reads during rotation. Re-encryption must not
+        overwrite a concurrent configuration update.
+        Deployment variables and secrets take precedence over saved values.
+        Distinguish unreadable configuration from missing saved configuration.
+        Configuration views must never return stored secret values.
 
     - path: "packages/studentconsulting/src/**"
       instructions: |
-        When navigation or submission changes, check the allowed
-        StudentConsulting addresses and the link to the exact externalId.
-        Submission requires autoSubmit to be enabled and unambiguous form controls.
-        Unknown required questions must never be answered by guessing.
-        Set submissionAttempted before the submit control is activated.
-        If an error happens after a possible submission effect, the result must be
-        unknown, not a safe pre-submission failure.
-        Verify the application against the right job ID before counting it as submitted.
-        Keep the distinction between applied, not_applied and unknown.
+        When navigation or submission changes, check trusted origins,
+        normalized job URLs and association with the exact externalId.
+        Preserve authenticated matching navigation; do not fall back to
+        the public job list when trusted matching navigation fails.
+        Submission requires explicit autoSubmit and unambiguous controls.
+        Do not guess answers to unsupported required questions.
+        Record submissionAttempted before activating the submit control.
+        Errors after a possible submission effect must produce an unknown
+        outcome, not a safe pre-submission failure.
+        Verification must check the exact job ID and must never submit a job.
+        Preserve applied, not_applied and unknown as distinct outcomes.
+        Keep credentials, profile content and filled values out of diagnostics.
 
     - path: "apps/web/src/providers.ts"
       instructions: |
-        When the browser lifecycle changes, check that launch,
-        page creation and provider operations clean up safely on failure.
-        Close started browser sessions even when the operation fails.
-        Check that STUDENTCONSULTING_AUTOSUBMIT only enables
-        automatic submission when the value is explicitly true.
+        When browser lifecycle changes, check cleanup after launch,
+        page creation and provider-operation failures.
+        Close started browser sessions even when operations fail.
+        Enable STUDENTCONSULTING_AUTOSUBMIT only for explicit true.
+        Keep browser sessions short to limit Browser Rendering usage.
+
+    - path: "apps/web/src/historical-backfill.ts"
+      instructions: |
+        When historical import changes, check that it reads authenticated
+        StudentConsulting history for the explicitly selected month.
+        Import only applications confirmed by StudentConsulting.
+        Historical import must never submit new applications.
+        Check deduplication and consistency with monthly quota accounting.
+        Generate the monthly export only when its verified target is met.
+
+    - path: "apps/web/src/{activity-export,report-storage,notifier}.ts"
+      instructions: |
+        When monthly exports change, use verified applications from D1.
+        Do not count uncertain or failed applications toward completion.
+        Preserve the ten-application target, job fields and filename date
+        based on the tenth verification in Europe/Stockholm.
+        Keep download and email content consistent.
+        Email delivery failure must not fail application processing or
+        cause an application to be submitted again.
+        Keep secrets out of exports, email diagnostics and stored evidence.
+
+    - path: "apps/web/src/{dashboard-data,dashboard-assets,auth-ui}.ts"
+      instructions: |
+        When dashboard or authentication UI changes, escape untrusted values
+        and preserve CSP and no-store response protections.
+        Show uncertain reservations separately from verified applications.
+        Do not expose secrets through configuration views or error pages.
+        UI controls must reflect server-side execution windows and permissions;
+        disabling a button is not a substitute for server-side enforcement.
+
+    - path: "apps/web/public/**"
+      instructions: |
+        When dashboard assets change, check safe rendering of API data,
+        compatibility with the existing CSP and authenticated API handling.
+        Preserve the distinction between verified results and uncertain slots.
+        Check keyboard access, labels and mobile controls when interactions
+        change. Report concrete barriers rather than cosmetic preferences.
 
     - path: "migrations/**"
       instructions: |
-        On schema changes, check D1/SQLite compatibility and
-        upgrading a database that already has applications.
-        Keep unique application links, reservation owners and the monthly limit.
-        Check that backfills account for already submitted and
-        uncertain applications so the upgrade never allows extra submissions.
-        When tables are dropped or rebuilt, check the actual
-        migration order, data preservation and affected runtime queries.
-        Do not assume a separate migration phase after deployment without code support.
+        Check D1/SQLite compatibility and upgrades of populated databases.
+        Never edit an already applied migration; add a new migration.
+        Preserve application uniqueness, reservation ownership and quota state.
+        Backfills must account for submitted and uncertain applications.
+        For table rebuilds or drops, check data preservation, migration order
+        and compatibility with runtime queries during deployment.
+        Additive migrations precede deployment; destructive migrations follow
+        deployment of code that no longer needs the removed schema.
+        Verify that actual deployment instructions support that ordering.
 
     - path: "docker/**"
       instructions: |
-        When container start or settings import changes, check
-        that /data keeps the database, evidence, settings and encryption key.
-        A restart or upgrade must never replace an existing key.
-        Check private file permissions and that imported values
-        are treated as data, not as shell code.
-        Keep the intended precedence of environment variables and saved settings.
-        Check the local migration before server start and that bundled mode
-        works without a Cloudflare account.
+        When container startup or settings import changes, preserve the
+        database, evidence, settings and encryption key under /data.
+        Generate missing keys only once; never replace an existing key.
+        Check private file permissions and treat imported values as data,
+        never as shell commands.
+        Preserve non-empty environment overrides over saved settings.
+        Apply local migrations before starting the server.
+        Bundled mode must work without a Cloudflare account.
 
     - path: "Dockerfile"
       instructions: |
-        When the runtime or dependencies change, check that wrangler,
-        Miniflare and the installed Chrome version work together.
-        Keep running as non-root and write access to /data and the required
-        cache directories. Check that runtime files and migrations are included.
-        Also check the effect on docker/entrypoint.sh.
+        When runtime dependencies change, check compatibility between
+        Wrangler, Miniflare, workerd and the installed Chrome version.
+        Preserve non-root execution and access to /data and required caches.
+        Include runtime files and migrations in the image.
+        Check compatibility with docker/entrypoint.sh.
 
     - path: "tools/render.mjs"
       instructions: |
-        When rendering changes, check that the placeholders declared
-        in cloudflare.example.env are replaced and that missing values fail clearly.
-        Check that copying and substitution never follow links into
-        secret files or write into the source tree.
-        The output must never be copied recursively into itself.
-        Secret values must never be exposed in logs or published artifacts.
+        When rendering changes, check replacement of declared placeholders
+        from cloudflare.example.env and clear errors for missing values.
+        Copying and substitution must not follow links into secret files,
+        write into the source tree or copy output recursively into itself.
+        Keep secret values out of logs and published artifacts.
+
+    # Use a distinct path key to retain the central Markdown instructions.
+    - path: "{README.md,docker/README.md,docs/**}"
+      instructions: |
+        This repository documents the service in Swedish and maintains an
+        English mirror under docs/eng/.
+        When documentation changes, update both versions in the same PR:
+        README.md maps to docs/eng/index.md, docker/README.md maps to
+        docs/eng/docker.md, and docs pages retain their filenames.
+        New documentation pages belong in both navigation sections.
+        Preserve the distinction between job applications and monthly exports.
+        Do not describe reporting to Arbetsformedlingen as a supported feature.
