@@ -6,6 +6,8 @@ Läs de gemensamma reglerna i början av varje session: [GOVERNANCE.md](https://
 
 ## Läs vid behov
 
+Read `.coderabbit.yaml` for repository-specific review guidance, including historical imports, monthly exports, dashboard state and documentation mirrors. Shared review settings remain in `pissmyran/coderabbit`.
+
 - [docs/oversikt.md](docs/oversikt.md): karta över dokumentationen.
 - [docs/architecture.md](docs/architecture.md): bindningar, state och säkerhet.
 - [docs/automation.md](docs/automation.md) och [docs/providers.md](docs/providers.md): körningarna och StudentConsulting.

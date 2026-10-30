@@ -60,6 +60,8 @@ Taggen `1` ger alla uppdateringar inom version 1; `X.Y` ger bara rättningar och
 
 ## Bidra
 
+CodeRabbit ärver gemensamma inställningar från `pissmyran/coderabbit`. `.coderabbit.yaml` lägger till granskningsregler för jobb, inklusive historisk import, månadsfiler, översiktens state och dokumentationens engelska speglar.
+
 Frågor och idéer tas i [Discussions](https://github.com/pissmyran/.github/discussions), fel och förslag som issues här. Läs [CONTRIBUTING.md](https://github.com/pissmyran/.github/blob/main/CONTRIBUTING.md) innan du öppnar en pull request. Säkerhetsproblem rapporteras privat via fliken Security.
 
 ## Licens
